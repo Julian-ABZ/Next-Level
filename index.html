@@ -753,20 +753,32 @@ html.light-mode header { background:rgba(240,246,255,0.96); }
   transition: border-color .2s;
 }
 .logbuch-item:hover { border-color: rgba(120,138,172,0.4); }
+.logbuch-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 15px;
+  border-radius: 12px;
+  font-family: var(--font-main);
+  transition: border-color .2s;
+  border-left: 4px solid transparent;
+}
+.logbuch-item:hover { opacity: 0.92; }
+
+/* Kategoriefarben als linker Balken + schwacher Hintergrund */
+.logbuch-item.badge-type     { background:rgba(120,138,172,0.08); border-left-color:#7a8aac; }
+.logbuch-item.ach-type       { background:rgba(201,168,76,0.08);  border-left-color:#c9a84c; }
+.logbuch-item.rank-type      { background:rgba(61,186,122,0.08);  border-left-color:#3dba7a; }
+.logbuch-item.prestige-type  { background:rgba(255,215,0,0.07);   border-left-color:#ffd700; }
+.logbuch-item.challenge-type { background:rgba(249,115,22,0.07);  border-left-color:#f97316; }
+.logbuch-item.modul-type     { background:rgba(245,158,11,0.07);  border-left-color:#f59e0b; }
+.logbuch-item.office-type    { background:rgba(59,130,246,0.07);  border-left-color:#3b82f6; }
+
 .logbuch-icon {
   width: 40px; height: 40px; border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   font-size: 1.3rem; flex-shrink: 0;
-  background: rgba(120,138,172,0.10);
-  border: 1px solid var(--card-border);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
 }
-.logbuch-icon.badge-type  { background:rgba(120,138,172,0.12); border-color:rgba(120,138,172,0.3); }
-.logbuch-icon.ach-type    { background:rgba(201,168,76,0.10);  border-color:rgba(201,168,76,0.3);  }
-.logbuch-icon.rank-type   { background:rgba(61,186,122,0.10);  border-color:rgba(61,186,122,0.3);  }
-.logbuch-icon.prestige-type{ background:rgba(255,215,0,0.10);  border-color:rgba(255,215,0,0.3);   }
-.logbuch-icon.challenge-type{ background:rgba(249,115,22,0.10);border-color:rgba(249,115,22,0.3);  }
-.logbuch-icon.modul-type  { background:rgba(245,158,11,0.10);  border-color:rgba(245,158,11,0.3);  }
-.logbuch-icon.office-type { background:rgba(59,130,246,0.10);  border-color:rgba(59,130,246,0.3);  }
 .logbuch-body { flex: 1; min-width: 0; }
 .logbuch-type-label {
   font-size: 0.63rem; font-weight: 800;
@@ -1414,6 +1426,47 @@ code { font-family:'Courier New',monospace;font-size:0.82em;background:rgba(255,
   </div>
 </div>
 
+<!-- OFFICE MAP INFO MODAL -->
+<div id="officeMapInfoModal" class="modal-overlay hidden" data-modal="officemapinfo">
+  <div class="rich-info-modal">
+    <div class="rinfo-header">
+      <span class="rinfo-icon">🗺️</span>
+      <h3>Wie funktioniert die Office Map?</h3>
+    </div>
+    <div class="rinfo-grid">
+      <div class="rinfo-item">
+        <div class="rinfo-item-icon gold">📍</div>
+        <div class="rinfo-item-text">
+          <div class="rinfo-item-title">Deinen Magneten setzen</div>
+          <div class="rinfo-item-desc">Setze deinen Magneten an den Arbeitsplatz, der dir für den aktuellen Tag zugewiesen ist. Halte dich dabei an die Planungen im OneNote.</div>
+        </div>
+      </div>
+      <div class="rinfo-item">
+        <div class="rinfo-item-icon blue">🏠</div>
+        <div class="rinfo-item-text">
+          <div class="rinfo-item-title">Home Office & Abwesende</div>
+          <div class="rinfo-item-desc">Setze Kolleg*innen im Home Office an die entsprechende Stelle. Abwesende Kolleg*innen kommen ebenfalls an die dafür vorgesehene Stelle.</div>
+        </div>
+      </div>
+      <div class="rinfo-item">
+        <div class="rinfo-item-icon green">🤝</div>
+        <div class="rinfo-item-text">
+          <div class="rinfo-item-title">Teamwork!</div>
+          <div class="rinfo-item-desc">Die Office Map lebt vom Miteinander — schaut gemeinsam drauf und helft euch gegenseitig beim Eintragen.</div>
+        </div>
+      </div>
+      <div class="rinfo-item">
+        <div class="rinfo-item-icon red">⚠️</div>
+        <div class="rinfo-item-text">
+          <div class="rinfo-item-title">Ausbuchen nicht vergessen!</div>
+          <div class="rinfo-item-desc">Vergiss nicht, dich zu Feierabend wieder auszubuchen und deinen Magneten in die neutrale Zone zu setzen.</div>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-gold btn-wide" onclick="closeModal('officeMapInfoModal')">✓ Verstanden!</button>
+  </div>
+</div>
+
 <!-- STREAK INFO MODAL -->
 <div id="streakInfoModal" class="modal-overlay hidden" data-modal="streakinfo">
   <div class="rich-info-modal">
@@ -1723,7 +1776,7 @@ code { font-family:'Courier New',monospace;font-size:0.82em;background:rgba(255,
       <button class="btn btn-danger btn-sm" onclick="closeModal('settingsModal');openConfirmModal()">🗑️ Konto komplett zurücksetzen</button>
     </div>
 
-    <div style="font-size:0.73rem;color:var(--text-muted);margin-bottom:4px">id="settingsVersion" &nbsp;·&nbsp; Next Level</div>
+<div style="font-size:0.73rem;color:var(--text-muted);margin-bottom:4px"><span id="settingsVersion">v6.0</span> &nbsp;·&nbsp; Next Level</div>
     <div style="font-size:0.70rem;color:var(--text-muted);margin-bottom:14px">© Ausbildungszentrum der Stadt Dortmund</div>
 
     <div class="flex-row" style="justify-content:flex-end">
@@ -1808,8 +1861,10 @@ code { font-family:'Courier New',monospace;font-size:0.82em;background:rgba(255,
     </div>
 
     <!-- ═══ NEU: OFFICE MAP ═══ -->
-    <div class="tile office-map-tile">
-      <div class="tile-title"><span class="icon">🗺️</span> Office Map</div>
+<div class="tile office-map-tile">
+      <div class="tile-title"><span class="icon">🗺️</span> Office Map
+        <button class="info-btn" onclick="openModal('officeMapInfoModal')">ℹ️</button>
+      </div>
       <div class="office-map-info">
         <div class="office-map-info-icon">💪</div>
         <div class="office-map-info-text">
@@ -1842,16 +1897,16 @@ code { font-family:'Courier New',monospace;font-size:0.82em;background:rgba(255,
   <!-- ═══ SPALTE 2: Tabs ═══ -->
   <div>
     <div class="tile">
-    <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('code',this)">🔑 Codes</button>
-        <button class="tab-btn" onclick="switchTab('badges',this)">🏅 <span style="text-transform:uppercase;font-weight:900">ABZ</span>eichen</button>
-        <button class="tab-btn" onclick="switchTab('challenges',this)">🎯 Challenges</button>
-        <button class="tab-btn" onclick="switchTab('achievements',this)">🏆 Achievements</button>
-        <button class="tab-btn" onclick="switchTab('leaderboard',this)">📊 Bestenliste</button>
-        <button class="tab-btn" onclick="switchTab('backup',this)">💾 Backup</button>
-        <button class="tab-btn" onclick="switchTab('logbuch',this)">📖 Logbuch</button>
-        <button class="tab-btn" onclick="switchTab('devlog',this)">📋 Dev-Log</button>
-      </div>
+<div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('code',this)">🔑 Codes</button>
+      <button class="tab-btn" onclick="switchTab('badges',this)">🏅 <span style="text-transform:uppercase;font-weight:900">ABZ</span>eichen</button>
+      <button class="tab-btn" onclick="switchTab('challenges',this)">🎯 Challenges</button>
+      <button class="tab-btn" onclick="switchTab('achievements',this)">🏆 Achievements</button>
+      <button class="tab-btn" onclick="switchTab('leaderboard',this)">📊 Bestenliste</button>
+      <button class="tab-btn" onclick="switchTab('backup',this)">💾 Backup</button>
+      <button class="tab-btn" onclick="switchTab('logbuch',this)">📖 Logbuch</button>
+      <button class="tab-btn" onclick="switchTab('devlog',this)">📋 Dev-Log</button>
+    </div>
 
       <!-- TAB: Code -->
       <div class="tab-panel active" id="tab-code">
@@ -2190,7 +2245,7 @@ const INTRO_CODE        = 'IchWerdeMeineCodesNiemalsWeitergeben';
 const MASTER_HASH       = 'R2VoZWltMTIzIQ==';        // btoa('Geheim123!')
 const DAILY_XP          = 75;
 const WEEKLY_XP         = 250;
-const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/1PDwZYVNkh4oyKmJxIRtSM-v4j82lLlBOcVyw_gjQ3QI/export?format=csv&gid=0';
+const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQaCLC2H_tCLivGdkIvMayo_AHIFr1vMN1_B85zSnhlOl6Dr36my5Zz7A_g1Yr9bKxoyX70BotT8s5F/pub?output=csv';
 
 /* ═══════════════════════════════════════════════════════════
    1. RÄNGE — genderspezifisch
@@ -2228,12 +2283,13 @@ const MAX_XP = 5360;
 const PRESTIGE_CONFIG = [
   { name:'Standard', icon:'⭐', label:'',                    color:'#7a8aac', glow:'rgba(120,138,172,0.18)' },
   { name:'Bronze',   icon:'🔶', label:'Bronze – Prestige I',  color:'#cd7f32', glow:'rgba(205,127,50,0.30)'  },
-  { name:'Silber',   icon:'🔷', label:'Silber – Prestige II', color:'#c0c0c0', glow:'rgba(192,192,192,0.30)' },
+  { name:'Silber',   icon:'🩶', label:'Silber – Prestige II', color:'#c0c0c0', glow:'rgba(192,192,192,0.30)' },
   { name:'Gold',     icon:'✨', label:'Gold – Prestige III',  color:'#ffd700', glow:'rgba(255,215,0,0.35)'   },
   { name:'Platin',   icon:'💠', label:'Platin – Prestige IV', color:'#00c8ff', glow:'rgba(0,200,255,0.35)'   },
   { name:'Diamant',  icon:'💎', label:'Diamant – Prestige V', color:'#b9f2ff', glow:'rgba(185,242,255,0.45)' },
 ];
-const PLB_LABELS = ['–','BR','SI','GO','PL','DI'];
+//hier kann man Text oder Icons einfügen zur Beschriftung des Prestige Symbols oben rechts
+const PLB_LABELS = ['–','🔶','🩶','✨','💠','💎'];
 const FONT_COMBOS = {
   1: { main:"'Plus Jakarta Sans',sans-serif", accent:"'DM Sans',sans-serif",  label:'Frisch & Professionell'    },
   2: { main:"'Inter',sans-serif",             accent:"'Rajdhani',sans-serif", label:'Klar & Modern'             },
@@ -4067,87 +4123,117 @@ function renderBadges() {
   const adminHint  = document.getElementById('adminBadgeHint');
   if (adminHint) adminHint.style.display = isAdmin ? 'block' : 'none';
 
-  const regularBadges = CODES.filter(c => !c.secret && !c.adminOnly).map(c => c.badge);
-  const weeklyBadges  = WEEKLY_CHALLENGES.map(w => w.badge);
-  const secretBadges  = EASTER_BADGES;
+  const unlocked = state.unlockedBadges || [];
 
-  const renderGrid = (gridId, badges, type) => {
-    const el = document.getElementById(gridId);
-    if (!el) return { count:0, total:badges.length };
-    const sorted = state.badgeSort === 'alpha'
-      ? [...badges].sort((a,b) => (a.name||'').localeCompare(b.name||''))
-      : badges;
-    let count = 0;
+  // Sortierfunktion
+  function sortBadges(arr) {
+    if (state.badgeSort === 'alpha') {
+      return [...arr].sort((a,b) => (a.name||'').localeCompare(b.name||'', 'de'));
+    }
+    // Standard: freigeschaltete zuerst (nach Zeitstempel), dann gesperrte alphabetisch
+    const u = arr.filter(b => unlocked.some(u => u.name === b.name))
+      .sort((a,b) => (unlocked.find(x=>x.name===a.name)?.ts||0) - (unlocked.find(x=>x.name===b.name)?.ts||0));
+    const l = arr.filter(b => !unlocked.some(u => u.name === b.name))
+      .sort((a,b) => (a.name||'').localeCompare(b.name||'', 'de'));
+    return [...u, ...l];
+  }
 
-    el.innerHTML = sorted.map(b => {
-      const unlocked = state.unlockedBadges.some(u => u.name === b.name);
-      if (unlocked) count++;
-      const rarityPill  = unlocked ? buildRarityPill(b.name, 'badge') : '';
-      const adminClick  = isAdmin && unlocked
-        ? `onclick="adminResetBadge('${(b.name||'').replace(/'/g,"\\'")}',${b.xp||0})"` : '';
-      const lockedClass = unlocked ? 'unlocked' : 'badge-locked';
-      const adminClass  = isAdmin && unlocked ? ' admin-reset-hover' : '';
+  function makeBadgeCard(b, type, overrideAdminClick) {
+    const isUnlocked = unlocked.some(u => u.name === b.name);
+    const rarityPill = isUnlocked ? buildRarityPill(b.name, 'badge') : '';
+    const lockedClass = isUnlocked ? 'unlocked' : 'badge-locked';
+    const adminClass  = isAdmin && isUnlocked ? ' admin-reset-hover' : '';
+    const adminClick  = overrideAdminClick ||
+      (isAdmin && isUnlocked ? `onclick="adminResetBadge('${(b.name||'').replace(/'/g,"\\'")}',${b.xp||0})"` : '');
 
-      if (type === 'easter' && !unlocked) {
-        return `<div class="badge-wrap">
-          <div class="badge-card badge-locked" title="Noch nicht entdeckt">
-            <div class="badge-secret-icon">👁️</div>
-            <div class="badge-name">???</div>
-          </div>
-        </div>`;
-      }
-      if (b.cookie) {
-        return `<div class="badge-wrap">
-          <div class="badge-card ${lockedClass}${adminClass}" ${adminClick}>
-            <div class="badge-cookie-wrap">
-              <span class="badge-cookie-mini">${b.emoji}</span>
-              <span class="badge-cookie-mini">${b.emoji}</span>
-            </div>
-            <div class="badge-name">${b.name}</div>
-            ${rarityPill}
-          </div>
-          <div class="badge-tooltip">
-            <div class="badge-tooltip-name">${b.name}</div>
-            <div class="badge-tooltip-desc">${b.desc||''}</div>
-          </div>
-        </div>`;
-      }
+    if (type === 'easter' && !isUnlocked) {
+      return `<div class="badge-wrap">
+        <div class="badge-card badge-locked" title="Noch nicht entdeckt">
+          <div class="badge-secret-icon">👁️</div>
+          <div class="badge-name">???</div>
+        </div>
+      </div>`;
+    }
+    if (b.cookie) {
       return `<div class="badge-wrap">
         <div class="badge-card ${lockedClass}${adminClass}" ${adminClick}>
-          <span class="badge-emoji">${b.emoji}</span>
-          <div class="badge-name">${b.name}</div>
-          ${rarityPill}
+          <div class="badge-cookie-wrap">
+            <span class="badge-cookie-mini">${b.emoji}</span>
+            <span class="badge-cookie-mini">${b.emoji}</span>
+          </div>
+          <div class="badge-name">${b.name}</div>${rarityPill}
         </div>
         <div class="badge-tooltip">
           <div class="badge-tooltip-name">${b.name}</div>
           <div class="badge-tooltip-desc">${b.desc||''}</div>
         </div>
       </div>`;
-    }).join('');
-    return { count, total:sorted.length };
-  };
+    }
+    return `<div class="badge-wrap">
+      <div class="badge-card ${lockedClass}${adminClass}" ${adminClick}>
+        <span class="badge-emoji">${b.emoji}</span>
+        <div class="badge-name">${b.name}</div>${rarityPill}
+      </div>
+      <div class="badge-tooltip">
+        <div class="badge-tooltip-name">${b.name}</div>
+        <div class="badge-tooltip-desc">${b.desc||''}</div>
+      </div>
+    </div>`;
+  }
 
-  renderGrid('badgeGridRegular', regularBadges, 'regular');
-  renderGrid('badgeGridWeekly',  weeklyBadges,  'weekly');
-  renderGrid('badgeGridSecret',  secretBadges,  'easter');
+  // ── Reguläre Abzeichen ──────────────────────────────
+  const regularBadges = CODES.filter(c => !c.secret && !c.adminOnly).map(c => c.badge);
+  const regEl = document.getElementById('badgeGridRegular');
+  if (regEl) {
+    let html = sortBadges(regularBadges).map(b => makeBadgeCard(b, 'regular')).join('');
+    // Admin-Codes anhängen
+    if (isAdmin) {
+      const adminCodes = CODES.filter(c => c.adminOnly && !c.secret);
+      if (adminCodes.length) {
+        html += `<div style="grid-column:1/-1;font-size:0.70rem;color:#c9a84c;margin-top:10px;font-weight:700;text-transform:uppercase">🛡️ Admin-Codes:</div>`;
+        html += adminCodes.map(c => {
+          const isU = unlocked.some(u => u.name === c.badge.name);
+          const ac = isU ? `onclick="adminResetBadge('${(c.badge.name||'').replace(/'/g,"\\'")}',${c.xp||0})"` : '';
+          return `<div class="badge-wrap">
+            <div class="badge-card ${isU?'unlocked':'badge-locked'}${isU?' admin-reset-hover':''}" ${ac}>
+              <span class="badge-emoji">${c.badge.emoji}</span>
+              <div class="badge-name">${c.badge.name}</div>
+            </div>
+            <div class="badge-tooltip">
+              <div class="badge-tooltip-name">${c.badge.name}</div>
+              <div class="badge-tooltip-desc">${c.badge.desc||''}</div>
+            </div>
+          </div>`;
+        }).join('');
+      }
+    }
+    regEl.innerHTML = html;
+  }
 
-  const totalUnlocked = state.unlockedBadges.length;
-  const totalAll      = regularBadges.length + weeklyBadges.length + secretBadges.length;
+  // ── Wöchentliche Abzeichen ──────────────────────────
+  const weeklyBadges = WEEKLY_CHALLENGES.map(w => w.badge);
+  const wklyEl = document.getElementById('badgeGridWeekly');
+  if (wklyEl) wklyEl.innerHTML = sortBadges(weeklyBadges).map(b => makeBadgeCard(b, 'weekly')).join('');
+
+  // ── Geheime Abzeichen (Codes secret + Easter) ────────
+  const secretCodeBadges = CODES.filter(c => c.secret && (isAdmin || !c.adminOnly)).map(c => c.badge);
+  const easterBadges     = EASTER_BADGES;
+  const allSecret        = [...secretCodeBadges, ...easterBadges];
+  const scrtEl = document.getElementById('badgeGridSecret');
+  if (scrtEl) scrtEl.innerHTML = allSecret.map(b => makeBadgeCard(b, 'easter')).join('');
+
+  // ── Fortschrittsbalken ──────────────────────────────
+  const totalAll     = regularBadges.length + (isAdmin ? CODES.filter(c=>c.adminOnly&&!c.secret).length : 0) + weeklyBadges.length + allSecret.length;
+  const totalUnlocked = unlocked.length;
   _setEl('badgeCount', `${totalUnlocked} von ${totalAll} Abzeichen freigeschaltet`);
   const pct = totalAll > 0 ? Math.round((totalUnlocked / totalAll) * 100) : 0;
   const fill = document.getElementById('badgeProgressFill');
   if (fill) fill.style.width = pct + '%';
   _setEl('badgeProgressLabel', `${pct}%`);
 
-  const ub = state.unlockedBadges;
-  _setCatStats('catStatsReg',  ub.filter(b => regularBadges.some(r => r.name===b.name)).length, regularBadges.length);
-  _setCatStats('catStatsWkly', ub.filter(b => weeklyBadges.some(r => r.name===b.name)).length,  weeklyBadges.length);
-  _setCatStats('catStatsScrt', ub.filter(b => secretBadges.some(r => r.name===b.name)).length,  secretBadges.length);
-}
-
-function _setCatStats(id, count, total) {
-  const el = document.getElementById(id);
-  if (el) el.innerHTML = ` — <span>${count}</span>/${total}`;
+  _setCatStats('catStatsReg',  unlocked.filter(b => regularBadges.some(r => r.name===b.name)).length, regularBadges.length);
+  _setCatStats('catStatsWkly', unlocked.filter(b => weeklyBadges.some(r => r.name===b.name)).length,  weeklyBadges.length);
+  _setCatStats('catStatsScrt', unlocked.filter(b => allSecret.some(r => r.name===b.name)).length,     allSecret.length);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -4250,8 +4336,8 @@ function renderLogbuch() {
     const d   = new Date(e.ts);
     const ts  = `${d.toLocaleDateString('de-DE')} ${d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})} Uhr`;
     const cls = iconClass[e.type] || '';
-    return `<div class="logbuch-item">
-      <div class="logbuch-icon ${cls}">${e.icon}</div>
+    return `<div class="logbuch-item ${cls}">
+      <div class="logbuch-icon">${e.icon}</div>
       <div class="logbuch-body">
         <div class="logbuch-type-label">${e.typeLabel}</div>
         <div class="logbuch-title">${e.title}</div>
@@ -4311,7 +4397,7 @@ let _lbCurrentFilter = 'all';
 let _adminModuleForScore = '';
 
 function copyScore() {
-  const effectiveModule = _adminModuleForScore || effectiveModule || '';
+  const effectiveModule = _adminModuleForScore || state.module || '';
   const pc = getPrestigeConfig(state.prestige);
   const adminData = {
     badges:           state.unlockedBadges.map(b => b.name),
