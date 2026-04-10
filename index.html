@@ -67,6 +67,23 @@ html.light-mode {
 }
 html.light-mode body { background: var(--bg-base); }
 
+/* Akkordeon Badge-Kategorien */
+.badge-section-toggle { cursor:pointer; user-select:none; }
+.badge-section-toggle::after { content:' ▾'; font-size:0.75rem; transition:transform .25s; display:inline-block; }
+.badge-section-toggle.collapsed::after { content:' ▸'; }
+.badge-section-body { overflow:hidden; transition:max-height .3s ease; }
+.badge-section-body.collapsed { display:none; }
+
+/* Browser-eigene Passwort-Anzeige-Icons unterdrücken */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear,
+input[type="password"]::-webkit-credentials-auto-fill-button,
+input[type="password"]::-webkit-strong-password-auto-fill-button {
+  display: none !important;
+}
+
+input[type="password"] { -webkit-appearance: none; }
+
 /* ══════════════════════════════════════════════════════════
    2. RESET & BODY
    ══════════════════════════════════════════════════════════ */
@@ -533,7 +550,7 @@ html.light-mode header { background:rgba(240,246,255,0.96); }
   margin-top: 10px; font-family: var(--font-main);
 }
 .office-map-streak-val { color: var(--warning); font-weight: 800; font-family: var(--font-accent); }
-.office-map-done-msg { color:var(--success);font-weight:700;font-size:0.86rem;display:flex;align-items:center;gap:6px;margin-bottom:8px; }
+.office-map-done-msg { color:var(--success);font-weight:700;font-size:0.86rem;display:block;line-height:1.6;margin-bottom:8px; }
 
 /* ══════════════════════════════════════════════════════════
    12. RANG-LISTE
@@ -676,7 +693,10 @@ html.light-mode header { background:rgba(240,246,255,0.96); }
 .ach-card.ach-secret-special { border-color:rgba(245,158,11,0.4);background:linear-gradient(135deg,rgba(245,158,11,0.06) 0%,rgba(239,68,68,0.03) 100%); }
 .ach-card.ach-secret-special::before { background:linear-gradient(90deg,transparent,rgba(245,158,11,0.5),transparent); }
 .ach-card.ach-secret-special .ach-icon-wrap { background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.4); }
-.ach-group-label { font-size:0.72rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin:16px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--card-border);display:flex;align-items:center;gap:6px;font-family:var(--font-main); }
+.ach-group-label { font-size:0.72rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin:16px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--card-border);display:flex;align-items:center;gap:6px;font-family:var(--font-main);cursor:pointer;user-select:none; }
+.ach-group-label::after { content:' ▾';font-size:0.9rem;margin-left:auto; }
+.ach-group-label.ach-collapsed::after { content:' ▸'; }
+.ach-group-body.ach-hidden { display:none; }
 .ach-separator   { font-size:0.73rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin:14px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--card-border);font-family:var(--font-main); }
 
 /* Titel-Selektor */
@@ -1321,7 +1341,7 @@ code { font-family:'Courier New',monospace;font-size:0.82em;background:rgba(255,
 
 
 <!-- LEVEL-UP MODAL -->
-<div id="levelUpModal" class="modal-overlay hidden" data-modal="levelup">
+<div id="levelUpModal" class="modal-overlay hidden" data-modal="levelup" tabindex="-1">
   <div class="levelup-modal">
     <div style="font-size:3.6rem;margin-bottom:8px">🎉</div>
     <div class="levelup-headline" id="levelupHeadline">RANG AUFGESTIEGEN!</div>
@@ -1403,17 +1423,6 @@ code { font-family:'Courier New',monospace;font-size:0.82em;background:rgba(255,
       <button class="btn btn-success btn-sm" onclick="confirmChallengeDone()">✅ Ja, erledigt!</button>
       <button class="btn btn-ghost btn-sm"   onclick="closeChallengeConfirm()">Abbrechen</button>
     </div>
-  </div>
-</div>
-
-<!-- CHALLENGE CODE -->
-<div id="challengeCodeModal" class="modal-overlay hidden" data-modal="challcode">
-  <div class="challenge-code-modal">
-    <h3>🎉 Dein persönlicher Code</h3>
-    <p>Kopiere den Code und gib ihn im Code-Feld ein!</p>
-    <div class="challenge-code-display" id="chalCodeDisplay" onclick="copyChallengeCode()" title="Klicken zum Kopieren">–</div>
-    <p class="challenge-code-note">⚠️ <strong>Exakt so eingeben</strong> (Groß-/Kleinschreibung beachten!)<br>Der Code gilt nur für dich.</p>
-    <button class="btn btn-success btn-wide" onclick="closeChallengeCode()">✅ Code kopiert!</button>
   </div>
 </div>
 
@@ -1879,7 +1888,7 @@ code { font-family:'Courier New',monospace;font-size:0.82em;background:rgba(255,
         Im Home-Office: Team-Check-in vor Bestätigung prüfen.
       </div>
       <div class="office-map-done-msg" id="officeMapDoneMsg" style="display:none">
-        ✅ Heute bereits eingecheckt! (+50 XP)
+✅ Heute bereits eingecheckt!<br><span style="font-size:0.8rem;opacity:0.85">(+50 XP)</span>
       </div>
       <div id="officeMapBtnWrap">
         <button class="btn btn-success btn-wide" onclick="checkInOfficeMap()">📍 Ja, ich bin eingecheckt!</button>
@@ -2038,6 +2047,10 @@ code { font-family:'Courier New',monospace;font-size:0.82em;background:rgba(255,
         <div class="badge-section" id="badgeSectionWeekly">
           <div class="badge-section-title">📅 Wöchentliche Challenges<span class="badge-cat-stats" id="catStatsWkly"></span></div>
           <div class="badge-grid" id="badgeGridWeekly"></div>
+        </div>
+		<div class="badge-section" id="badgeSectionSpecial">
+          <div class="badge-section-title">🧭 Spezial-Abzeichen</div>
+          <div class="badge-grid" id="badgeGridSpecial"></div>
         </div>
         <div class="badge-section" id="badgeSectionSecret">
           <div class="badge-section-title">🔍 Geheime Abzeichen<span class="badge-cat-stats" id="catStatsScrt"></span></div>
@@ -2245,8 +2258,6 @@ const INTRO_CODE        = 'IchWerdeMeineCodesNiemalsWeitergeben';
 const MASTER_HASH       = 'R2VoZWltMTIzIQ==';        // btoa('Geheim123!')
 const DAILY_XP          = 75;
 const WEEKLY_XP         = 250;
-const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQaCLC2H_tCLivGdkIvMayo_AHIFr1vMN1_B85zSnhlOl6Dr36my5Zz7A_g1Yr9bKxoyX70BotT8s5F/pub?output=csv';
-const GOOGLE_SHEETS_PROXY = 'https://corsproxy.io/?';
 
 /* ═══════════════════════════════════════════════════════════
    1. RÄNGE — genderspezifisch
@@ -2302,9 +2313,26 @@ function getPrestigeConfig(p) { return PRESTIGE_CONFIG[Math.min(p, PRESTIGE_CONF
    3. CODES
    ═══════════════════════════════════════════════════════════ */
 const CODES = [
-  { hash:'U0lDSEVSMjAyNA==', xp:50,    msg:'🛡️ Sicherheitsunterweisung abgeschlossen!', badge:{emoji:'🛡️',name:'Sicherheits-Profi',   desc:'Nutze den Code SICHER2024.'  }, secret:false, adminOnly:false },
-  { hash:'V09SS1NIT1AtVE9Q', xp:100,   msg:'🎓 Workshop-Teilnahme bestätigt!',           badge:{emoji:'🎓',name:'Workshop-Star',         desc:'Nutze den Code WORKSHOP-TOP.'}, secret:false, adminOnly:false },
-  { hash:'RkxFSVNTLUJJRU5F', xp:20,   msg:'🐝 Fleißpunkte gesammelt!',                  badge:{emoji:'🐝',name:'Fleiß-Biene',           desc:'Nutze den Code FLEISS-BIENE.'}, secret:false, adminOnly:false },
+  { hash: btoa('WORKSHOP-TOP'),        xp:100, msg:'🎓 Workshop gehalten!',              badge:{emoji:'🎓', name:'Top-Dozent/in',          desc:'Halte einen Workshop.'                        }, secret:false, adminOnly:false },
+  { hash: btoa('SICHER IST SICHER'),   xp:50,  msg:'🛡️ Sicherheitsunterweisung erledigt!',badge:{emoji:'🛡️', name:'Safety first!',          desc:'Sicherheitsunterweisung erledigt.'            }, secret:false, adminOnly:false },
+  { hash: btoa('DSGVOHA'),             xp:50,  msg:'🔒 Datenschutzbelehrung abgeschlossen!',badge:{emoji:'🔒',name:'Datenschützer/in',        desc:'Datenschutzbelehrung abgeschlossen.'          }, secret:false, adminOnly:false },
+  { hash: btoa('ROLLEVORWAERTS'),      xp:75,  msg:'🎭 Rolle übernommen!',                badge:{emoji:'🎭', name:'Rolemodel',               desc:'Rolle mind. 14 Tage übernommen.'              }, secret:false, adminOnly:false },
+  { hash: btoa('GESCHAFFT'),           xp:100, msg:'🪨 Modulprüfung geschafft!',          badge:{emoji:'🪨', name:'Stein vom Herz',           desc:'Modulprüfung abgeschlossen.'                  }, secret:false, adminOnly:false },
+  { hash: btoa('livingonaprayer'),     xp:75,  msg:'📋 Zwischenbeurteilung erledigt!',    badge:{emoji:'📋', name:'Halfway there',            desc:'Zwischenbeurteilung erledigt.'                }, secret:false, adminOnly:false },
+  { hash: btoa('Adios'),               xp:100, msg:'👋 Abschlussbeurteilung erledigt!',   badge:{emoji:'👋', name:'Ich bin dann mal raus',    desc:'Abschlussbeurteilung erledigt.'               }, secret:false, adminOnly:false },
+  { hash: btoa('IchGebeCodesNiemalsAnAndereWeiter'), xp:0, msg:'🤝 Ehrensache!',         badge:{emoji:'🤝', name:'Ehrensache!',              desc:'Gib deine Codes niemals weiter!'              }, secret:false, adminOnly:false },
+  { hash: btoa('GUTESHERZ'),           xp:50,  msg:'💛 Pfand gespendet!',                 badge:{emoji:'💛', name:'Wohltäter/in',             desc:'Spende deinen Pfand.'                        }, secret:false, adminOnly:false },
+  { hash: btoa('Die5Ringe'),           xp:50,  msg:'🏅 Bürolympiade-Teilnahme!',          badge:{emoji:'🏅', name:'Olympionike/Olympionikin', desc:'Nimm an der Bürolympiade teil.'               }, secret:false, adminOnly:false },
+  // Geheime Codes:
+  { hash: btoa('0PROBLEM'),            xp:50,  msg:"🎉 Let's get this party started!",    badge:{emoji:'🎉', name:"Let's get this party started", desc:'Finde den Code in der Begrüßungsmail.'   }, secret:true,  adminOnly:false },
+  { hash: btoa('MJAMMJAM'),            xp:50,  msg:'🍰 Mjam Mjam!',                       badge:{emoji:'🍰', name:'Mjam Mjam!',               desc:'Kuchen / Süßigkeiten mitgebracht.'           }, secret:true,  adminOnly:false },
+  { hash: btoa('i-B-DAY'),             xp:0,   msg:'🎂 Herzlichen Glückwunsch!',          badge:{emoji:'🎂', name:'Geburtstagskind',           desc:'Herzlichen Glückwunsch zum Geburtstag!'      }, secret:true,  adminOnly:false },
+  { hash: btoa('BUGFIX'),              xp:75,  msg:'🐛 Bug gemeldet – danke!',            badge:{emoji:'🐛', name:'Whitehacker/in',            desc:'Melde einen Bug oder Verbesserungsvorschlag.'}, secret:true,  adminOnly:false },
+  { hash: btoa('Rekrut'),              xp:100, msg:'🏕️ Bootcamp überstanden!',            badge:{emoji:'🏕️', name:'Bootcamp-Überlebende/r',    desc:'Bootcamp erfolgreich absolviert.'            }, secret:true,  adminOnly:false },
+  { hash: btoa('OLYMP1'),              xp:200, msg:'🥇 Bürolympiade gewonnen!',           badge:{emoji:'🥇', name:'Bürochampion!',             desc:'Gewinne die Bürolympiade.'                   }, secret:true,  adminOnly:false },
+  { hash: btoa('GRANDIOS2'),           xp:150, msg:'🥈 Vizemeister!',                     badge:{emoji:'🥈', name:'Vizemeister/in',            desc:'2. Platz bei der Bürolympiade.'              }, secret:true,  adminOnly:false },
+  { hash: btoa('MEGA3'),               xp:100, msg:'🥉 Treppchen!',                       badge:{emoji:'🥉', name:'Treppchen!',                desc:'3. Platz bei der Bürolympiade.'              }, secret:true,  adminOnly:false },
+  { hash: btoa('FACKELLAUF'),          xp:150, msg:'🔥 Team-Spirit!',                     badge:{emoji:'🔥', name:'Team-Spirit',               desc:'Gewinne die Bürolympiade mit deinem Modul.' }, secret:true,  adminOnly:false },
   // Admin-Testcodes (nur im Admin-Modus sichtbar)
   { hash:'MQ==',  xp:50,    msg:'✅ [Admin] Testcode 1',    badge:{emoji:'1️⃣', name:'Starter-Code',       desc:'[Admin].'}, secret:false, adminOnly:true },
   { hash:'Mg==',  xp:100,   msg:'✅ [Admin] Testcode 2',    badge:{emoji:'2️⃣', name:'Zweimal dabei',       desc:'[Admin].'}, secret:false, adminOnly:true },
@@ -2316,6 +2344,31 @@ const CODES = [
   { hash:'OA==',  xp:20000, msg:'🌌 [Admin] Geheimcode 8',  badge:{emoji:'🌌', name:'Universumserkunder',   desc:'[Admin].'}, secret:true,  adminOnly:true },
   { hash:'OQ==',  xp:30000, msg:'🐉 [Admin] Geheimcode 9',  badge:{emoji:'🐉', name:'Drachenbezwinger',     desc:'[Admin].'}, secret:true,  adminOnly:true },
   { hash:'MTA=',  xp:50000, msg:'👑 [Admin] Geheimcode 10', badge:{emoji:'👑', name:'Ultimative Legende',   desc:'[Admin].'}, secret:true,  adminOnly:true },
+];
+
+
+/* ═══════════════════════════════════════════════════════════
+   SPEZIAL-ABZEICHEN (5-Code-Sammel-Badges)
+   ═══════════════════════════════════════════════════════════ */
+const SPECIAL_BADGES = [
+  {
+    id: 'erkunder',
+    nameMale:   'Erkunder',
+    nameFemale: 'Erkunderin',
+    emoji: '🧭',
+    desc: 'Finde die fünf Codes im ABZ',
+    codes: ['KOFFEINKICK','ISTEASYODER','WASCHIWASCHI','ZzZ','DRUECKER'].map(c => btoa(c)),
+    xp: 150
+  },
+  {
+    id: 'gutbelesen',
+    nameMale:   'Gut belesen',
+    nameFemale: 'Gut belesen',
+    emoji: '📚',
+    desc: 'Finde die fünf Codes im allgemeinen OneNote',
+    codes: ['WOSINDSE','FACTS','KITCHENpossible','ROLLINGINTHEDEEP','RichtigWichtig'].map(c => btoa(c)),
+    xp: 150
+  }
 ];
 
 /* ═══════════════════════════════════════════════════════════
@@ -2382,7 +2435,7 @@ const ACHIEVEMENTS = [
   { id:'prestige_bronze',      group:'prestige',         emoji:'🔶', name:'Bronze Prestige',          xp:100, desc:'Prestige Level 1 erreicht.',                  bonus:null,
     title:{female:'die Bronzene',male:'der Bronzene',position:'suffix'},
     check:(s)=>s.prestige>=1 },
-  { id:'prestige_silber',      group:'prestige',         emoji:'🔷', name:'Silber Prestige',          xp:150, desc:'Prestige Level 2 erreicht.',                  bonus:null,
+  { id:'prestige_silber',      group:'prestige',         emoji:'🩶', name:'Silber Prestige',          xp:150, desc:'Prestige Level 2 erreicht.',                  bonus:null,
     title:{female:'die Silberne',male:'der Silberne',position:'suffix'},
     check:(s)=>s.prestige>=2 },
   { id:'prestige_gold',        group:'prestige',         emoji:'✨', name:'Gold Prestige',            xp:200, desc:'Prestige Level 3 erreicht.',                  bonus:null,
@@ -2487,7 +2540,7 @@ let state = {
   // ── Persönliche Challenges ──────────────────────────────
   dailyDone:{}, weeklyDone:{},
   // ── Streak ──────────────────────────────────────────────
-  streakCount:0, streakFactor:0, streakLastDate:null,
+  streakCount:0, streakFactor:0,
   streakMax:0,
   streakFrozen:false, streakTotalFreezes:3, streakFreezesUsed:0,
   // ── Activity Bar ────────────────────────────────────────
@@ -2526,6 +2579,7 @@ let state = {
   firstOpenTs:null,          // Timestamp erster Start
   // ── Rarity-Daten (NEU v6.0, für Seltenheitsgrad) ────────
   _rarityData:{},            // { badgeName: { owners, total } }
+  specialBadgeProgress:{},   // { erkunder: ['HASH1',...], gutbelesen: [...] }
 };
 
 /* ═══════════════════════════════════════════════════════════
@@ -2556,7 +2610,6 @@ function loadState() {
       weeklyDone:            p.weeklyDone            || {},
       streakCount:           p.streakCount           || 0,
       streakFactor:          p.streakFactor          || 0,
-      streakLastDate:        p.streakLastDate        || null,
       streakMax:             p.streakMax !== undefined ? p.streakMax : (p.streakFactor || 0),
       streakFrozen:          p.streakFrozen          || false,
       streakTotalFreezes:    p.streakTotalFreezes !== undefined ? p.streakTotalFreezes : 3,
@@ -2590,6 +2643,7 @@ function loadState() {
       totalClickCount:       p.totalClickCount       || 0,
       firstOpenTs:           p.firstOpenTs           || Date.now(),
       _rarityData:           p._rarityData           || {},
+      specialBadgeProgress:  p.specialBadgeProgress  || {},
     };
   } catch(e) { console.warn('State-Ladefehler:', e); }
 }
@@ -2614,8 +2668,8 @@ function init() {
     saveState();
     processHistory();
     render();
-    // Google Sheets Modul-Challenges laden (im Hintergrund)
-    if (state.module) loadModuleChallenges();
+// Alle Challenges aus GitHub CSV laden (Persönlich + Modul)
+    syncChallengesFromSheets();
   }
 }
 
@@ -2670,8 +2724,8 @@ function startOnboarding() {
   processHistory();
   render();
 
-  // Modul-Challenges im Hintergrund laden
-  loadModuleChallenges();
+// Alle Challenges aus GitHub CSV laden
+  syncChallengesFromSheets();
 
   // Intro für neue Nutzer
   if (!state.introCompleted) {
@@ -2900,7 +2954,6 @@ function handleModalKeys(e) {
     else if (id === 'infoModal')             closeModal('infoModal');
     else if (id === 'streakInfoModal')       closeModal('streakInfoModal');
     else if (id === 'fortschrittInfoModal')  closeModal('fortschrittInfoModal');
-    else if (id === 'challengeCodeModal')    closeChallengeCode();
     else if (id === 'settingsModal')         saveSettings();
     else if (id === 'disclaimerModal')       closeDisclaimerBackToSettings();
     else                                     closeModal(id);
@@ -2967,8 +3020,10 @@ function _showLevelUpModalNow(gainedRanks) {
     </div>`).join('');
   document.getElementById('levelupRanks').innerHTML = ranksHTML;
 
-  openModal('levelUpModal');
-  fireBigConfetti();
+openModal('levelUpModal');
+// NEU: Fokus auf Modal setzen, damit Leertaste/Enter direkt schließt
+setTimeout(() => document.getElementById('levelUpModal')?.focus(), 50);
+fireBigConfetti();
 }
 
 function closeLevelUpModal() {
@@ -2996,6 +3051,83 @@ function closeAchievementModal() {
    ═══════════════════════════════════════════════════════════ */
 let _modulSheetData   = [];   // Alle Zeilen aus Google Sheets
 let _adminModuleTest  = '';   // Admin: Test-Modul (überschreibt state.module)
+
+/* ═══════════════════════════════════════════════════════════
+   GITHUB CSV — Alle 4 Challenge-Bereiche aus einer Datei
+   ═══════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════
+   GOOGLE SHEETS CSV — 4 separate Tabs
+   ═══════════════════════════════════════════════════════════ */
+const CSV_PERSONAL_DAILY  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQaCLC2H_tCLivGdkIvMayo_AHIFr1vMN1_B85zSnhlOl6Dr36my5Zz7A_g1Yr9bKxoyX70BotT8s5F/pub?gid=0&single=true&output=csv';
+const CSV_PERSONAL_WEEKLY = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQaCLC2H_tCLivGdkIvMayo_AHIFr1vMN1_B85zSnhlOl6Dr36my5Zz7A_g1Yr9bKxoyX70BotT8s5F/pub?gid=250630435&single=true&output=csv';
+const CSV_MODUL_DAILY     = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQaCLC2H_tCLivGdkIvMayo_AHIFr1vMN1_B85zSnhlOl6Dr36my5Zz7A_g1Yr9bKxoyX70BotT8s5F/pub?gid=472147045&single=true&output=csv';
+const CSV_MODUL_WEEKLY    = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQaCLC2H_tCLivGdkIvMayo_AHIFr1vMN1_B85zSnhlOl6Dr36my5Zz7A_g1Yr9bKxoyX70BotT8s5F/pub?gid=249144006&single=true&output=csv';
+
+async function syncChallengesFromSheets() {
+  try {
+    const [pdText, pwText, mdText, mwText] = await Promise.all([
+      fetch(CSV_PERSONAL_DAILY,  { cache:'no-store' }).then(r => r.ok ? r.text() : ''),
+      fetch(CSV_PERSONAL_WEEKLY, { cache:'no-store' }).then(r => r.ok ? r.text() : ''),
+      fetch(CSV_MODUL_DAILY,     { cache:'no-store' }).then(r => r.ok ? r.text() : ''),
+      fetch(CSV_MODUL_WEEKLY,    { cache:'no-store' }).then(r => r.ok ? r.text() : ''),
+    ]);
+
+    // ── Persönliche Daily ──────────────────────────────────
+    // Kopfzeile: Titel,Beschreibung,XP,Aktiv
+    const pdRows = parseCSV(pdText).filter(r => (r['Aktiv']||'').trim().toLowerCase() === 'ja');
+    if (pdRows.length) {
+      DAILY_CHALLENGES.length = 0;
+      pdRows.forEach(r => DAILY_CHALLENGES.push({
+        title: (r['Titel']        || '').trim() || '–',
+        desc:  (r['Beschreibung'] || '').trim() || '–',
+        xp:    parseInt(r['XP'] || '0', 10) || DAILY_XP,
+      }));
+      console.log('[CSV] Personal Daily geladen:', DAILY_CHALLENGES.length);
+    }
+
+    // ── Persönliche Weekly ─────────────────────────────────
+    // Kopfzeile: Titel,Beschreibung,XP,Badge_Emoji,Aktiv
+    const pwRows = parseCSV(pwText).filter(r => (r['Aktiv']||'').trim().toLowerCase() === 'ja');
+    if (pwRows.length) {
+      WEEKLY_CHALLENGES.length = 0;
+      pwRows.forEach(r => WEEKLY_CHALLENGES.push({
+        title: (r['Titel']        || '').trim() || '–',
+        desc:  (r['Beschreibung'] || '').trim() || '–',
+        xp:    parseInt(r['XP']  || '0', 10) || WEEKLY_XP,
+        badge: {
+          emoji: (r['Badge_Emoji'] || '⭐').trim(),
+          name:  (r['Titel']       || '').trim() || '–',
+          desc:  (r['Beschreibung']|| '').trim() || '–',
+        }
+      }));
+      console.log('[CSV] Personal Weekly geladen:', WEEKLY_CHALLENGES.length);
+    }
+
+    // ── Modul Daily & Weekly ───────────────────────────────
+    // Kopfzeile: Titel,Beschreibung,XP,Code,Modul,Aktiv
+    const mdRows = parseCSV(mdText).filter(r => (r['Aktiv']||'').trim().toLowerCase() === 'ja');
+    const mwRows = parseCSV(mwText).filter(r => (r['Aktiv']||'').trim().toLowerCase() === 'ja');
+
+    _modulSheetData = [
+      ...mdRows.map(r => ({ Modul:(r['Modul']||'').trim(), Titel:(r['Titel']||'').trim(), Beschreibung:(r['Beschreibung']||'').trim(), XP:(r['XP']||'0').trim(), Code:(r['Code']||'').trim(), ID:'modul_daily'  })),
+      ...mwRows.map(r => ({ Modul:(r['Modul']||'').trim(), Titel:(r['Titel']||'').trim(), Beschreibung:(r['Beschreibung']||'').trim(), XP:(r['XP']||'0').trim(), Code:(r['Code']||'').trim(), ID:'modul_weekly' })),
+    ];
+    console.log('[CSV] Modul-Daten gesamt:', _modulSheetData.length);
+
+    // ── Rendern ────────────────────────────────────────────
+    renderChallenges();
+    const target = (_adminModuleTest || state.module || '').trim();
+    if (target) {
+      const filtered = _modulSheetData.filter(row => row.Modul === target);
+      console.log('[CSV] Modul-Rows für', target, ':', filtered.length);
+      _renderModulChallenge('daily',  filtered);
+      _renderModulChallenge('weekly', filtered);
+    }
+
+  } catch (err) {
+    console.warn('[Google Sheets CSV] Laden fehlgeschlagen:', err);
+  }
+}
 
 /** Lädt die CSV-Daten aus Google Sheets und rendert die Modul-Challenges */
 async function loadModuleChallenges() {
@@ -3482,8 +3614,10 @@ function renderRankList() {
     if (r.name === 'Kompetenzsammler')   displayName = 'Kompetenz-<br>sammler';
         
     // Zweizeilige Darstellung für Verwaltungsmeister/in
-    if (r.name === 'Verwaltungsmeisterin' || r.name === 'Verwaltungsmeiterin') displayName = 'Verwaltungs-<br>meisterin';
+if (r.name === 'Verwaltungsmeisterin' || r.name === 'Verwaltungsmeiterin') displayName = 'Verwaltungs-<br>meisterin';
     if (r.name === 'Verwaltungsmeister' || r.name === 'Verwaltungsmeiter')   displayName = 'Verwaltungs-<br>meister';
+    if (r.name === 'Behördenveteranin') displayName = 'Behörden-<br>veteranin';
+    if (r.name === 'Behördenveteran')   displayName = 'Behörden-<br>veteran';
 
     return `<div class="rank-item${isActive ? ' active' : ''}${isLocked ? ' locked' : ''}">
       <div class="rank-icon">${r.icon}</div>
@@ -3557,7 +3691,7 @@ function renderOfficeMap() {
   const btnWrap  = document.getElementById('officeMapBtnWrap');
   const streakEl = document.getElementById('officeMapStreak');
 
-  if (doneMsg)  doneMsg.style.display  = isDone ? 'flex'  : 'none';
+  if (doneMsg)  doneMsg.style.display  = isDone ? 'block' : 'none';
   if (btnWrap)  btnWrap.style.display  = isDone ? 'none'  : 'block';
   if (streakEl) {
     const s = state.officeMapStreak || 0;
@@ -3796,9 +3930,22 @@ function redeemCode() {
   if (raw.startsWith('DLY-')) { _handleDailyChallengeCode(raw, fb, input); return; }
   if (raw.startsWith('WKL-')) { _handleWeeklyChallengeCode(raw, fb, input); return; }
 
+// Modul-Challenge Codes (aus CSV)
+  const _pc = state._pendingChallenges || {};
+  if (_pc.dailyModulCode  && raw === _pc.dailyModulCode)  { _completeModulChallengeByCode('daily',  fb, input); return; }
+  if (_pc.weeklyModulCode && raw === _pc.weeklyModulCode) { _completeModulChallengeByCode('weekly', fb, input); return; }
+
   // Easter-Egg Codes
   if (ABZ_CODES.includes(upper))     { _unlockEasterBadge('abzftw',  fb); if(input) input.value=''; return; }
   if (STALKER_CODES.includes(upper)) { _unlockEasterBadge('stalker', fb); if(input) input.value=''; return; }
+  // Spezial-Badge-Sammelcodes prüfen
+const inputHash = btoa(raw);
+for (const sb of SPECIAL_BADGES) {
+  if (sb.codes.includes(inputHash)) {
+    _handleSpecialBadgeCode(sb, inputHash, fb, input);
+    return;
+  }
+}
 
   // Pause-Easter-Egg (12-13 Uhr)
   if (new Date().getHours() === 12) _unlockEasterBadge('pause', fb);
@@ -3848,6 +3995,37 @@ function processCode(found, input, fb) {
   scheduleModals(gainedRanks, newAchs);
 }
 
+function _completeModulChallengeByCode(type, fb, input) {
+  const isDaily  = type === 'daily';
+  const doneKey  = isDaily ? getTodayStr() : getWeekKey();
+  const doneMap  = isDaily ? state.modulDailyDone : state.modulWeeklyDone;
+  if (doneMap[doneKey]) {
+    _showCodeFeedback(fb,'error',`⚠️ Modul-${isDaily?'Daily':'Weekly'} bereits erledigt!`);
+    return;
+  }
+  const xpGain = parseInt((state._pendingChallenges||{})[isDaily?'dailyModulXP':'weeklyModulXP'] || '0', 10) || 0;
+  const title  = (state._pendingChallenges||{})[isDaily?'dailyModulTitle':'weeklyModulTitle'] || 'Modul-Challenge';
+
+  doneMap[doneKey] = true;
+  if (isDaily) state.modulDailyCount  = (state.modulDailyCount||0)  + 1;
+  else         state.modulWeeklyCount = (state.modulWeeklyCount||0) + 1;
+
+  state.xp      += xpGain;
+  state.totalXP  = (state.totalXP||0) + xpGain;
+  spawnXPFloat(xpGain);
+  if (input) input.value = '';
+
+  addLogbuchEntry({
+    type:'challenge', icon: isDaily ? '🌅' : '📅',
+    typeLabel: isDaily ? 'Modul Daily Challenge' : 'Modul Weekly Challenge',
+    title, reward:`+${xpGain} XP`, desc:'Modul-Challenge per Code bestätigt.', ts:Date.now()
+  });
+
+  _showCodeFeedback(fb,'success',`✅ Modul-${isDaily?'Daily':'Weekly'} erledigt! +${xpGain} XP`);
+  const newAchs = checkAchievements(), gainedRanks = checkRankUp();
+  saveState(); render(); syncChallengesFromSheets(); scheduleModals(gainedRanks, newAchs);
+}
+
 function _handleDailyChallengeCode(raw, fb, input) {
   const today    = getTodayStr();
   if (state.dailyDone[today]) {
@@ -3879,6 +4057,52 @@ function _handleDailyChallengeCode(raw, fb, input) {
   _showCodeFeedback(fb,'success',`✅ Daily Challenge erledigt! +${DAILY_XP} XP 🔥`);
   const newAchs = checkAchievements(), gainedRanks = checkRankUp();
   saveState(); render(); scheduleModals(gainedRanks, newAchs);
+}
+
+function _handleSpecialBadgeCode(sb, hash, fb, input) {
+  const progress = state.specialBadgeProgress || {};
+  const found    = progress[sb.id] || [];
+
+  if (found.includes(hash)) {
+    _showCodeFeedback(fb, 'error', '⚠️ Diesen Code hast du bereits eingelöst!');
+    return;
+  }
+
+  found.push(hash);
+  progress[sb.id] = found;
+  state.specialBadgeProgress = progress;
+
+  const count = found.length;
+  const total = sb.codes.length;
+
+  if (count < total) {
+    _showCodeFeedback(fb, 'success', `🔍 Code gefunden! ${count}/${total} – weitersuchen!`);
+saveState(); render(); renderBadges();
+    if (input) input.value = '';
+    return;
+  }
+
+  const gender = state.gender
+  const name   = gender === 'female' ? (sb.nameFemale || sb.nameMale) : sb.nameMale;
+
+  if (!state.unlockedBadges.some(b => b.name === name)) {
+    const ts = Date.now();
+    state.unlockedBadges.push({ emoji: sb.emoji, name, desc: sb.desc, ts });
+    state.xp     += sb.xp;
+    state.totalXP = (state.totalXP || 0) + sb.xp;
+    spawnXPFloat(sb.xp);
+    addLogbuchEntry({
+      type:'badge', icon: sb.emoji, typeLabel:'Abzeichen',
+      title: name, reward:`+${sb.xp} XP`, desc: sb.desc, ts
+    });
+  }
+
+  _showCodeFeedback(fb, 'success', `🎉 ${sb.emoji} „${name}" freigeschaltet!`);
+  const newAchs     = checkAchievements();
+  const gainedRanks = checkRankUp();
+  saveState(); render();
+  scheduleModals(gainedRanks, newAchs);
+  if (input) input.value = '';
 }
 
 function _handleWeeklyChallengeCode(raw, fb, input) {
@@ -4015,9 +4239,12 @@ function toggleCodeVisibility() {
    ═══════════════════════════════════════════════════════════ */
 let _pendingChallengeType = null;
 
+function closeChallengeConfirm() {
+  closeModal('challengeConfirmModal');
+}
+
 function showChallengeConfirm(type) {
   _pendingChallengeType = type;
-
   const titles = {
     daily:       'Persönliche Daily Challenge erledigt?',
     weekly:      'Persönliche Weekly Challenge erledigt?',
@@ -4027,8 +4254,8 @@ function showChallengeConfirm(type) {
   const texts = {
     daily:       'Hast du die heutige Daily Challenge wirklich abgeschlossen?',
     weekly:      'Hast du die wöchentliche Challenge wirklich erledigt?',
-    modulDaily:  'Hast du die Modul Daily Challenge wirklich abgeschlossen?',
-    modulWeekly: 'Hast du die Modul Weekly Challenge wirklich erledigt?',
+    modulDaily:  'Super! Gib danach den Code deiner Ausbilder*in im Codes-Tab ein.',
+    modulWeekly: 'Super! Gib danach den Code deiner Ausbilder*in im Codes-Tab ein.',
   };
   _setEl('chalConfTitle', titles[type] || 'Challenge erledigt?');
   _setEl('chalConfText',  texts[type]  || 'Hast du die Challenge auch wirklich erledigt?');
@@ -4040,31 +4267,11 @@ function confirmChallengeDone() {
   const type = _pendingChallengeType;
   if (!type) return;
 
-  if (type === 'daily' || type === 'weekly') {
-    // Persönliche Challenge → Code generieren und anzeigen
-    const code = generatePersonalChallengeCode(type);
-    state._pendingChallenges = { type, code };
-    document.getElementById('chalCodeDisplay').textContent = code;
-    openModal('challengeCodeModal');
-  } else if (type === 'modulDaily' || type === 'modulWeekly') {
-    // Modul-Challenge → direkt abschließen (Code kommt aus Sheets)
-    completeModulChallenge(type);
-  }
-}
-
-function closeChallengeConfirm() {
-  closeModal('challengeConfirmModal');
-}
-
-function confirmChallengeDone() {
-  closeChallengeConfirm();
-  const type = _pendingChallengeType;
-  if (!type) return;
-
   if (type === 'daily') {
-    // Persönliche Daily → direkt erledigen
-    const today = getTodayStr();
+    const today    = getTodayStr();
     if (state.dailyDone[today]) { showToast('⚠️ Daily bereits erledigt!'); return; }
+    const dailyIdx = dateSeed(today) % DAILY_CHALLENGES.length;
+    const dailyXP  = DAILY_CHALLENGES[dailyIdx]?.xp || DAILY_XP;
     state.dailyDone[today] = true;
     state.streakCount  = (state.streakCount||0) + 1;
     state.streakFactor = (state.streakFactor||0) + 1;
@@ -4074,43 +4281,42 @@ function confirmChallengeDone() {
     state.activityConsecutive = (state.activityConsecutive||0) + 1;
     state.activityPos  = Math.min(40, (state.activityPos||20) + (state.activityConsecutive >= 3 ? 2 : 1));
     pulseActivityBar('hot');
-    state.xp      += DAILY_XP;
-    state.totalXP  = (state.totalXP||0) + DAILY_XP;
-    spawnXPFloat(DAILY_XP);
+    state.xp      += dailyXP;
+    state.totalXP  = (state.totalXP||0) + dailyXP;
+    spawnXPFloat(dailyXP);
     addLogbuchEntry({
       type:'challenge', icon:'🌅', typeLabel:'Persönliche Daily Challenge',
-      title:DAILY_CHALLENGES[dateSeed(today) % DAILY_CHALLENGES.length].title,
-      reward:`+${DAILY_XP} XP`, desc:'Daily Challenge erledigt!', ts:Date.now()
+      title: DAILY_CHALLENGES[dailyIdx]?.title || '–',
+      reward:`+${dailyXP} XP`, desc:'Daily Challenge erledigt!', ts:Date.now()
     });
     const newAchs = checkAchievements(), gainedRanks = checkRankUp();
     saveState(); render(); scheduleModals(gainedRanks, newAchs);
-    showToast(`✅ Daily Challenge erledigt! +${DAILY_XP} XP 🔥`);
+    showToast(`✅ Daily Challenge erledigt! +${dailyXP} XP 🔥`);
 
   } else if (type === 'weekly') {
-    // Persönliche Weekly → direkt erledigen
-    const weekKey = getWeekKey();
+    const weekKey  = getWeekKey();
     if (state.weeklyDone[weekKey]) { showToast('⚠️ Weekly bereits erledigt!'); return; }
-    const wIdx  = dateSeed(weekKey) % WEEKLY_CHALLENGES.length;
-    const weekly = WEEKLY_CHALLENGES[wIdx];
+    const wIdx     = dateSeed(weekKey) % WEEKLY_CHALLENGES.length;
+    const weekly   = WEEKLY_CHALLENGES[wIdx];
+    const weeklyXP = weekly?.xp || WEEKLY_XP;
     state.weeklyDone[weekKey] = true;
-    if (weekly.badge && !state.unlockedBadges.some(b => b.name === weekly.badge.name)) {
+    if (weekly?.badge && !state.unlockedBadges.some(b => b.name === weekly.badge.name)) {
       const ts = Date.now();
       state.unlockedBadges.push({ emoji:weekly.badge.emoji, name:weekly.badge.name, desc:weekly.badge.desc, ts });
       addLogbuchEntry({ type:'badge', icon:weekly.badge.emoji, typeLabel:'Wöchentliches Abzeichen',
         title:weekly.badge.name, reward:'+Badge', desc:weekly.badge.desc, ts });
     }
-    state.xp      += WEEKLY_XP;
-    state.totalXP  = (state.totalXP||0) + WEEKLY_XP;
-    spawnXPFloat(WEEKLY_XP);
+    state.xp      += weeklyXP;
+    state.totalXP  = (state.totalXP||0) + weeklyXP;
+    spawnXPFloat(weeklyXP);
     pulseActivityBar('hot');
     addLogbuchEntry({ type:'challenge', icon:'📅', typeLabel:'Persönliche Weekly Challenge',
-      title:weekly.title, reward:`+${WEEKLY_XP} XP`, desc:'Weekly Challenge erledigt!', ts:Date.now() });
+      title:weekly?.title || '–', reward:`+${weeklyXP} XP`, desc:'Weekly Challenge erledigt!', ts:Date.now() });
     const newAchs = checkAchievements(), gainedRanks = checkRankUp();
     saveState(); render(); scheduleModals(gainedRanks, newAchs);
-    showToast(`✅ Weekly erledigt! +${WEEKLY_XP} XP + Abzeichen 🎉`);
+    showToast(`✅ Weekly erledigt! +${weeklyXP} XP + Abzeichen 🎉`);
 
   } else if (type === 'modulDaily' || type === 'modulWeekly') {
-    // Modul-Challenge → Info-Popup dass Code beim Ausbilder geholt werden muss
     openModal('modulChallengeCodeInfoModal');
   }
 }
@@ -4126,17 +4332,25 @@ function renderBadges() {
   const unlocked = state.unlockedBadges || [];
 
   // Sortierfunktion
-  function sortBadges(arr) {
-    if (state.badgeSort === 'alpha') {
-      return [...arr].sort((a,b) => (a.name||'').localeCompare(b.name||'', 'de'));
-    }
-    // Standard: freigeschaltete zuerst (nach Zeitstempel), dann gesperrte alphabetisch
-    const u = arr.filter(b => unlocked.some(u => u.name === b.name))
-      .sort((a,b) => (unlocked.find(x=>x.name===a.name)?.ts||0) - (unlocked.find(x=>x.name===b.name)?.ts||0));
-    const l = arr.filter(b => !unlocked.some(u => u.name === b.name))
-      .sort((a,b) => (a.name||'').localeCompare(b.name||'', 'de'));
-    return [...u, ...l];
+function sortBadges(arr) {
+  const isUnlocked = b => unlocked.some(u => u.name === b.name);
+  const getTs      = b => unlocked.find(x => x.name === b.name)?.ts || 0;
+
+  if (state.badgeSort === 'alpha') {
+    // Alphabetisch – aber geheime Abzeichen (0 Fortschritt) ans Ende
+    const visible = arr.filter(b => isUnlocked(b) || b.name !== '???');
+    const secret  = arr.filter(b => !isUnlocked(b) && b.name === '???');
+    return [
+      ...visible.sort((a, b) => (a.name||'').localeCompare(b.name||'', 'de')),
+      ...secret
+    ];
   }
+
+  // Standard: freigeschaltete zuerst (nach Freischalt-Zeitpunkt), dann gesperrte alphabetisch
+  const u = arr.filter(b =>  isUnlocked(b)).sort((a, b) => getTs(a) - getTs(b));
+  const l = arr.filter(b => !isUnlocked(b)).sort((a, b) => (a.name||'').localeCompare(b.name||'', 'de'));
+  return [...u, ...l];
+}
 
   function makeBadgeCard(b, type, overrideAdminClick) {
     const isUnlocked = unlocked.some(u => u.name === b.name);
@@ -4219,8 +4433,14 @@ function renderBadges() {
   const secretCodeBadges = CODES.filter(c => c.secret && (isAdmin || !c.adminOnly)).map(c => c.badge);
   const easterBadges     = EASTER_BADGES;
   const allSecret        = [...secretCodeBadges, ...easterBadges];
-  const scrtEl = document.getElementById('badgeGridSecret');
-  if (scrtEl) scrtEl.innerHTML = allSecret.map(b => makeBadgeCard(b, 'easter')).join('');
+const scrtEl = document.getElementById('badgeGridSecret');
+  if (scrtEl) {
+    // Freigeschaltete zuerst (nach Zeitstempel), dann gesperrte
+    const secretUnlocked = allSecret.filter(b =>  unlocked.some(u => u.name === b.name))
+      .sort((a, b) => (unlocked.find(x => x.name === a.name)?.ts || 0) - (unlocked.find(x => x.name === b.name)?.ts || 0));
+    const secretLocked   = allSecret.filter(b => !unlocked.some(u => u.name === b.name));
+    scrtEl.innerHTML = [...secretUnlocked, ...secretLocked].map(b => makeBadgeCard(b, 'easter')).join('');
+  }
 
   // ── Fortschrittsbalken ──────────────────────────────
   const totalAll     = regularBadges.length + (isAdmin ? CODES.filter(c=>c.adminOnly&&!c.secret).length : 0) + weeklyBadges.length + allSecret.length;
@@ -4234,11 +4454,72 @@ function renderBadges() {
   _setCatStats('catStatsReg',  unlocked.filter(b => regularBadges.some(r => r.name===b.name)).length, regularBadges.length);
   _setCatStats('catStatsWkly', unlocked.filter(b => weeklyBadges.some(r => r.name===b.name)).length,  weeklyBadges.length);
   _setCatStats('catStatsScrt', unlocked.filter(b => allSecret.some(r => r.name===b.name)).length,     allSecret.length);
+  // ── Spezial-Abzeichen (5-Code-Sammler) ─────────────────
+  const spclEl = document.getElementById('badgeGridSpecial');
+  if (spclEl) {
+    const gender   = state.gender || 'male';
+    const progress = state.specialBadgeProgress || {};
+spclEl.innerHTML = SPECIAL_BADGES.map(sb => {
+      const found      = (progress[sb.id] || []).length;
+      const total      = sb.codes.length;
+      const name       = gender === 'female' ? (sb.nameFemale || sb.nameMale) : sb.nameMale;
+      const isUnlocked = state.unlockedBadges.some(b => b.name === sb.nameMale || b.name === sb.nameFemale);
+
+      if (found === 0 && !isUnlocked) {
+        return `<div class="badge-wrap">
+          <div class="badge-card badge-locked" title="Noch nicht entdeckt">
+            <div class="badge-secret-icon">👁️</div>
+            <div class="badge-name">???</div>
+          </div>
+          <div class="badge-tooltip"><div class="badge-tooltip-name">???</div><div class="badge-tooltip-desc">???</div></div>
+        </div>`;
+      }
+
+      const pct = isUnlocked ? 100 : Math.round((found / total) * 100);
+      return `<div class="badge-wrap" style="min-width:110px">
+        <div class="badge-card ${isUnlocked ? 'unlocked' : 'badge-locked'}" style="padding:10px 7px 8px;${!isUnlocked ? 'filter:grayscale(60%)' : ''}">
+          <span class="badge-emoji">${sb.emoji}</span>
+          <div class="badge-name">${name}</div>
+          ${!isUnlocked ? `
+            <div style="width:100%;margin-top:6px">
+              <div style="font-size:0.62rem;color:var(--text-muted);margin-bottom:3px;text-align:center">${found}/${total} Codes</div>
+              <div style="height:5px;border-radius:50px;background:rgba(255,255,255,0.08);overflow:hidden">
+                <div class="badge-progress-fill" style="width:${pct}%"></div>
+              </div>
+            </div>` : ''}
+        </div>
+        <div class="badge-tooltip"><div class="badge-tooltip-name">${name}</div><div class="badge-tooltip-desc">${sb.desc}</div></div>
+      </div>`;
+    }).join('');
+  }
+
+  document.querySelectorAll('.badge-section-title').forEach(title => {
+    if (title.dataset.accordionReady) return;
+    title.dataset.accordionReady = 'true';
+    title.style.cursor = 'pointer';
+    title.addEventListener('click', () => {
+      const body = title.nextElementSibling;
+      if (!body) return;
+      const hidden = body.style.display === 'none';
+      body.style.display = hidden ? '' : 'none';
+      title.dataset.collapsed = hidden ? '' : 'true';
+    });
+  });
 }
 
 /* ═══════════════════════════════════════════════════════════
    34. ACHIEVEMENT-GALERIE RENDERN
    ═══════════════════════════════════════════════════════════ */
+function getGenderedAchName(name, gender) {
+  if (!name.includes('/')) return name;
+  const slash     = name.lastIndexOf('/');
+  const base      = name.slice(0, slash);      // z.B. "Geheimagent"
+  const femSuffix = name.slice(slash + 1);     // z.B. "in" oder "e"
+  if (gender !== 'female') return base;
+  if (femSuffix === 'e') return base.slice(0, -1); // "Fortgeschrittener" → "Fortgeschrittene"
+  return base + femSuffix;                          // "Geheimagent" + "in" → "Geheimagentin"
+}
+
 function renderAchievements() {
   const el = document.getElementById('achGrid');
   if (!el) return;
@@ -4258,10 +4539,12 @@ function renderAchievements() {
   let html = '';
   let unlocked = 0;
 
-  sorted.forEach(ach => {
+sorted.forEach(ach => {
     if (ach.group !== lastGroup) {
+      if (lastGroup !== null) html += `</div>`; // vorherige Gruppe schließen
       lastGroup = ach.group;
-      html += `<div class="ach-group-label">${groupLabels[ach.group] || ach.group}</div>`;
+      html += `<div class="ach-group-label" onclick="this.classList.toggle('ach-collapsed');this.nextElementSibling.classList.toggle('ach-hidden')">${groupLabels[ach.group] || ach.group}</div>`;
+      html += `<div class="ach-group-body">`;
     }
 
     const isUnlocked = state.unlockedAchievements.some(u => u.id === ach.id);
@@ -4279,7 +4562,7 @@ function renderAchievements() {
     html += `<div class="ach-card ${isUnlocked ? 'unlocked' : 'locked'}">
       <div class="ach-icon-wrap">${ach.emoji}</div>
       <div class="ach-body">
-        <div class="ach-name">${ach.name} ${xpTag} ${titleTag}</div>
+<div class="ach-name">${getGenderedAchName(ach.name, state.gender)} ${xpTag} ${titleTag}</div>
         <div class="ach-desc">${ach.desc}</div>
         ${bonusTag}
         ${rarityPill}
@@ -4300,6 +4583,7 @@ function renderAchievements() {
       <div class="ach-status">${secUnlocked ? '✅' : '🔒'}</div>
     </div>`;
 
+if (lastGroup !== null) html += `</div>`; // letzte Gruppe schließen
   el.innerHTML = html;
 
   const total = ACHIEVEMENTS.length;
@@ -4703,7 +4987,7 @@ function switchTab(id, btn) {
   if (id === 'achievements') { renderAchievements(); updateTitleSelector(); }
   if (id === 'logbuch')      renderLogbuch();
   if (id === 'devlog')       renderDevLog();
-  if (id === 'challenges')   { renderChallenges(); loadModuleChallenges(); }
+  if (id === 'challenges')   { renderChallenges(); syncChallengesFromSheets(); }
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -5042,8 +5326,12 @@ function closeAdminPanel() {
     saveState(); render();
     showToast('🗑️ Admin-Werte zurückgesetzt.');
   }
-  document.getElementById('adminPanel')?.classList.remove('visible');
+document.getElementById('adminPanel')?.classList.remove('visible');
   document.getElementById('adminBadgeHint').style.display = 'none';
+  // Bestenliste sofort ohne Admin-Augen neu rendern
+  if (_lbAllEntries.length > 0) {
+    _renderLeaderboardTable(_lbAllEntries, false);
+  }
 }
 
 function generateHash() {
@@ -5204,7 +5492,6 @@ function importSave() {
       profilePic:p.profilePic||null,
       dailyDone:p.dailyDone||{}, weeklyDone:p.weeklyDone||{},
       streakCount:p.streakCount||0, streakFactor:p.streakFactor||0,
-      streakLastDate:p.streakLastDate||null,
       streakMax:p.streakMax!==undefined?p.streakMax:(p.streakFactor||0),
       streakFrozen:p.streakFrozen||false,
       streakTotalFreezes:p.streakTotalFreezes!==undefined?p.streakTotalFreezes:3,
@@ -5243,7 +5530,7 @@ function importSave() {
     document.getElementById('importCode').value = '';
     processHistory();
     render();
-    if (state.module) loadModuleChallenges();
+    syncChallengesFromSheets();
     showToast(`✅ Spielstand von „${state.name}" wiederhergestellt!`);
   } catch(e) {
     showToast('❌ Ungültiger Backup-Code.');
