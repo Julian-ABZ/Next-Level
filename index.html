@@ -6,7 +6,7 @@
 <title>Next Level 🏛️</title>
 <!--
   ╔══════════════════════════════════════════════════════════╗
-  ║  NEXT LEVEL v6.0 – Azubi-Campus                         ║
+  ║  NEXT LEVEL v6.0                                         ║
   ╠══════════════════════════════════════════════════════════╣
   ║  NEU in v6.0:                                           ║
   ║  • Anrede & Modul-Abfrage in Startmaske (Buttons)       ║
@@ -2773,6 +2773,8 @@ function init() {
     render();
 // Alle Challenges aus GitHub CSV laden (Persönlich + Modul)
     syncChallengesFromSheets();
+    // NEU: Live-Bestenliste starten
+    setTimeout(initLiveLeaderboard, 800);
   }
 }
 
@@ -2829,6 +2831,8 @@ function startOnboarding() {
 
 // Alle Challenges aus GitHub CSV laden
   syncChallengesFromSheets();
+  // NEU: Live-Bestenliste starten
+  setTimeout(initLiveLeaderboard, 800);
 
   // Intro für neue Nutzer
   if (!state.introCompleted) {
@@ -5746,7 +5750,6 @@ function adminResetBadge(name, xp) {
     state.totalXP = Math.max(0, (state.totalXP||0) - easterBadge.xp);
   }
   saveState(); render(); renderBadges(); showToast(`🗑️ „${name}" zurückgesetzt.`);
-  initLiveLeaderboard(); // NEU: Live-Bestenliste starten
 }
 
 /* ═══════════════════════════════════════════════════════════
