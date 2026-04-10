@@ -1,0 +1,6 @@
+ID,Titel,Beschreibung,XP,Code,Modul,Aktiv
+1,Der frühe Vogel,Sei heute bis spätestens 07:45 Uhr an deinem Platz!,50,Test3,P&O,Ja
+2,Ordnung muss sein,Räume heute vor dem Feierabend deinen Schreibtisch komplett auf.,30,Test4,D,Ja
+3,Kaffee-Runde,Koche heute eine Kanne Kaffee für das gesamte Team.,40,Test5,F,Ja
+4,Ordnung muss sein,Räume heute vor dem Feierabend deinen Schreibtisch komplett auf.,20,Test6,R&O,Ja
+5,Kaffee-Runde,Koche heute eine Kanne Kaffee für das gesamte Team.,10,Test7,LV,Ja
