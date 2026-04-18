@@ -1285,24 +1285,27 @@ window.firebaseUploadScore = async function(st) {
   } catch(e) { console.warn('Firebase Upload Fehler:', e); }
 };
 
-/** Live-Listener: Bestenliste in Echtzeit — mit Null-Filterung */
+/** Live-Listener: Bestenliste in Echtzeit empfangen — mit Null-Filterung */
 window.firebaseSubscribeLeaderboard = function(callback) {
   _db.ref('leaderboard').on('value', snap => {
     const entries = [];
     snap.forEach(child => {
       const v = child.val();
-      if (v && v.name) entries.push(v);   // null-Einträge überspringen
+      if (v && v.name && !v.isTestUser) entries.push(v);  // Null + Test-User aus LB raus
     });
     entries.sort((a, b) => (b.xp || 0) - (a.xp || 0));
     callback(entries);
   }, err => console.warn('Firebase Listener Fehler:', err));
 };
 
-/** Admin: Alle User aus RTDB laden */
+/** Admin: Alle User aus RTDB laden (inkl. Test-User) */
 window.firebaseGetAllUsers = async function() {
   const snap = await _db.ref('leaderboard').once('value');
   const users = [];
-  snap.forEach(child => users.push(child.val()));
+  snap.forEach(child => {
+    const v = child.val();
+    if (v && v.name) users.push(v);  // nur Null rausfiltern
+  });
   return users;
 };
 
@@ -2205,8 +2208,8 @@ window.firebaseCreateTestUser = async function(data) {
             </div>
           </div>
 
-          <!-- Modul-Wechsel für Admin-Test (Google Sheets Challenges) -->
-          <div class="admin-title" style="margin-bottom:8px">🌐 Modul-Challenge testen</div>
+         <!-- Modul dauerhaft wechseln -->
+          <div class="admin-title" style="margin-bottom:8px">🌐 Modul dauerhaft wechseln</div>
           <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px">
             <select id="adminModuleTestSelect" style="flex:1;padding:8px 11px;background:var(--navy);border:1.5px solid var(--slate);border-radius:7px;color:var(--cream);font-family:var(--font-main);font-size:0.83rem;outline:none">
               <option value="">— Modul des Users —</option>
@@ -2429,7 +2432,7 @@ window.firebaseCreateTestUser = async function(data) {
 
   <!-- Test-User erstellen -->
   <div class="tile-title" style="font-size:0.95rem;margin-bottom:4px"><span class="icon">🧪</span> Test-User erstellen</div>
-  <p style="color:var(--text-muted);font-size:0.78rem;margin-bottom:12px">Dummy-Profile für Demo-Zwecke. Werden in der Bestenliste mit 🧪 markiert.</p>
+<p style="color:var(--text-muted);font-size:0.78rem;margin-bottom:12px">Test-Profile für Demo-Zwecke. Erscheinen nur in der Benutzerverwaltung, nicht in der Live-Bestenliste.</p>
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
     <div>
@@ -3207,12 +3210,21 @@ function handleModalKeys(e) {
     return;
   }
 
-  // ── Admin-User-Detail-Modal ───────────────────────────
+// ── Admin-User-Detail-Modal ───────────────────────────
   const adminDetail = document.getElementById('adminUserDetailModal');
   if (adminDetail && !adminDetail.classList.contains('hidden')) {
     if (key === 'Escape' || key === 'Enter' || key === ' ') {
       e.preventDefault(); closeModal('adminUserDetailModal'); return;
     }
+  }
+
+  // ── Info-Modal (Auge-Popup) ───────────────────────────
+  const infoOv = document.getElementById('infoModalOverlay');
+  if (infoOv && infoOv.style.display !== 'none') {
+    // Detail-Listen-Overlay hat Vorrang
+    const detailOv = document.getElementById('_detailListOverlay');
+    if (detailOv) { if (key === 'Escape' || key === ' ' || key === 'Enter') { e.preventDefault(); detailOv.remove(); } return; }
+    if (key === 'Escape' || key === ' ' || key === 'Enter') { e.preventDefault(); infoOv.remove(); return; }
   }
 
   // ── Sonstige Modals: Leertaste & Enter & Escape ───────
@@ -3562,23 +3574,26 @@ function _updateModulCounter() {
   _setEl('modulWeeklyCount', String(state.modulWeeklyCount || 0));
 }
 
-/* Admin: Modul zum Testen wechseln (Konsolen-Aufruf) */
 function adminTestModuleChallenges() {
   const sel = document.getElementById('adminModuleTestSelect');
-  _adminModuleTest = sel ? sel.value : '';
-  console.log(`[Admin] Teste Modul-Challenges für: ${_adminModuleTest || '(User-Modul)'}`);
+  const newModule = sel ? sel.value : '';
+  if (!newModule) { showToast('⚠️ Bitte ein Modul auswählen!'); return; }
+  if (!confirm(`Modul dauerhaft zu „${newModule}" wechseln?\n\nDies ändert das Modul des Accounts und die Bestenlisten-Anzeige.`)) return;
+
+  state.module = newModule;
+  _adminModuleTest = newModule;
+  _adminModuleForScore = newModule;
+  saveState();
+  render();
   loadModuleChallenges();
-  showToast(`🧪 Lade Modul-Challenges für: ${_adminModuleTest || state.module}`);
-  // Score-Modul für Admin-Test temporär anpassen
-  _adminModuleForScore = _adminModuleTest;
+  showToast(`✅ Modul dauerhaft geändert: ${newModule}`);
 }
 
 function adminResetModuleTest() {
   _adminModuleTest = '';
   const sel = document.getElementById('adminModuleTestSelect');
   if (sel) sel.value = '';
-  loadModuleChallenges();
-  showToast('↩️ Modul-Test zurückgesetzt (User-Modul aktiv)');
+  showToast('↩️ Auswahl zurückgesetzt – Modul des Accounts unverändert');
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -5151,18 +5166,21 @@ function renderLiveLeaderboard() {
 let html = `<table class="lb-table"><thead><tr>
     <th>#</th><th></th><th>Name</th><th>Modul</th><th>XP</th><th>Abzeichen</th><th></th>
   </tr></thead><tbody>`;
-  data.forEach((e, i) => {
+data.forEach((e, i) => {
+    if (!e || !e.name) return;                           // Null-Schutz
     const isMe = e.name === state.name;
     const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
-    const prestigeCfg = (window.getPrestigeConfig || (() => ({})))(e.prestige || 0);
+    const prestigeIcon = (e.prestige > 0)
+      ? ((window.getPrestigeConfig || (() => ({})))(e.prestige)?.icon || '') : '';
+    const safeEntry = JSON.stringify(e).replace(/'/g,"&#39;");
     html += `<tr${isMe ? ' class="me"' : ''}>
       <td class="place">${medal || (i+1)}</td>
-      <td class="prestige-icon-col">${prestigeCfg?.icon || ''}</td>
+      <td class="prestige-icon-col">${prestigeIcon}</td>
       <td><strong>${e.name}</strong></td>
       <td style="font-size:0.8rem;color:var(--text-muted)">${e.module || '–'}</td>
-      <td><strong>${e.xp.toLocaleString('de-DE')}</strong></td>
+      <td><strong>${(e.xp||0).toLocaleString('de-DE')}</strong></td>
       <td>${e.badges || 0}</td>
-      <td><button class="lb-eye-btn" onclick="openUserDetailLive(this)" data-entry='${JSON.stringify(e).replace(/'/g,"&#39;")}'>👁️</button></td>
+      <td><button class="lb-eye-btn" onclick="openUserDetailLive(this)" data-entry='${safeEntry}'>👁️</button></td>
     </tr>`;
   });
   html += '</tbody></table>';
@@ -5330,165 +5348,164 @@ function openUserDetailLive(btn) {
   let e;
   try { e = JSON.parse(btn.dataset.entry.replace(/&#39;/g, "'")); } catch { return; }
 
-  const isAdmin     = state._isAdmin;
-  const pc          = getPrestigeConfig(e.prestige || 0);
-  const totalBadges = (typeof CODES!=='undefined' ? CODES.filter(c=>!c.adminOnly).length : 0)
-                    + (typeof WEEKLY_CHALLENGES!=='undefined' ? WEEKLY_CHALLENGES.length : 0)
-                    + (typeof EASTER_BADGES!=='undefined' ? EASTER_BADGES.length : 0);
-  const totalAchs   = typeof ACHIEVEMENTS!=='undefined' ? ACHIEVEMENTS.length : 0;
-
-  const pct  = (n,t) => t>0 ? `${n}/${t} (${Math.round(n/t*100)}%)` : `${n}`;
-  const row  = (lbl,val,gold=false) =>
-    `<div style="display:flex;justify-content:space-between;padding:7px 12px;
-      background:rgba(255,255,255,0.04);border-radius:8px;font-size:0.83rem">
+  const isAdmin   = state._isAdmin;
+  const pc        = getPrestigeConfig(e.prestige || 0);
+  const totBadges = CODES.filter(c=>!c.adminOnly).length + WEEKLY_CHALLENGES.length + EASTER_BADGES.length;
+  const totAchs   = ACHIEVEMENTS.length;
+  const pct = (n,t) => t > 0 ? `${n}/${t} (${Math.round(n/t*100)}%)` : `${n}`;
+  const fTs = ts  => ts ? new Date(ts).toLocaleString('de-DE',{dateStyle:'short',timeStyle:'short'}) : '–';
+  const row = (lbl,val,gold=false) =>
+    `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 11px;
+      background:rgba(255,255,255,0.04);border-radius:8px;font-size:0.82rem">
       <span style="color:var(--text-muted)">${lbl}</span>
       <strong${gold?' style="color:var(--prestige-color)"':''}>${val??'–'}</strong></div>`;
-  const sec  = (icon,lbl) =>
-    `<div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;
-      letter-spacing:0.07em;margin:14px 0 6px;font-family:var(--font-main)">${icon} ${lbl}</div>`;
+  const sec = (icon,lbl) =>
+    `<div style="font-size:0.66rem;color:var(--text-muted);text-transform:uppercase;
+      letter-spacing:0.08em;margin:13px 0 5px;font-family:var(--font-main)">${icon} ${lbl}</div>`;
 
   // Profilbild
   const picHtml = e.profilePic
-    ? `<img src="${e.profilePic}" style="width:60px;height:60px;border-radius:50%;object-fit:cover">`
-    : `<span style="font-size:2.8rem">👤</span>`;
+    ? `<img src="${e.profilePic}" style="width:58px;height:58px;border-radius:50%;object-fit:cover">`
+    : `<span style="font-size:2.6rem">👤</span>`;
 
-  // Vitrine
+  // Vitrine — leere Slots = wirklich leer
   const showcaseHtml = [0,1,2].map(i => {
     const a = (e.showcase||[])[i];
-    return `<div title="${a?.name||'Leer'}" style="width:50px;height:50px;border-radius:11px;
-      background:rgba(255,255,255,0.05);
-      border:1.5px solid ${a?'var(--prestige-color)':'var(--card-border)'};
-      display:flex;align-items:center;justify-content:center;font-size:1.4rem">${a?a.emoji:'⭐'}</div>`;
+    if (!a) return `<div style="width:50px;height:50px;border-radius:11px;
+      background:rgba(255,255,255,0.03);border:1.5px dashed rgba(120,138,172,0.25)"></div>`;
+    return `<div title="${a.name}" style="width:50px;height:50px;border-radius:11px;
+      background:rgba(255,255,255,0.06);border:1.5px solid var(--prestige-color);
+      display:flex;align-items:center;justify-content:center;font-size:1.4rem">${a.emoji}</div>`;
   }).join('');
 
-  // Activity-Bar visuell
-  const actPct   = Math.round(((e.activityPos||20)/40)*100);
-  const actColor = actPct >= 75 ? '#ef4444' : actPct >= 50 ? '#f97316' : actPct >= 25 ? '#3b82f6' : '#60aff5';
-  const actBar   = `<div style="background:rgba(255,255,255,0.07);border-radius:50px;height:8px;margin-top:4px;overflow:hidden">
-    <div style="height:100%;width:${actPct}%;background:${actColor};border-radius:50px"></div></div>
-    <div style="font-size:0.70rem;color:var(--text-muted);margin-top:2px">${e.activityPos||20}/40</div>`;
+  // Activity-Bar (nur Admin)
+  const actPct = Math.round(((e.activityPos||20)/40)*100);
+  const actCol = actPct>=75?'#ef4444':actPct>=50?'#f97316':actPct>=25?'#3b82f6':'#60aff5';
+  const actBarHtml = `<div style="background:rgba(255,255,255,0.07);border-radius:50px;height:7px;margin:4px 0 2px;overflow:hidden">
+    <div style="height:100%;width:${actPct}%;background:${actCol};border-radius:50px"></div></div>
+    <span style="font-size:0.70rem;color:var(--text-muted)">${e.activityPos||20}/40</span>`;
 
-  // --- Normale Sektionen (für alle sichtbar) ---
+  // Basis-HTML (für alle)
   let html = `
-    <div style="text-align:center;padding:8px 0 12px">
+    <div style="text-align:center;padding:6px 0 12px">
       ${picHtml}
-      <div style="font-weight:800;font-size:1.1rem;color:var(--prestige-color);margin-top:7px">
-        ${e.activeTitle ? `<span style="font-size:0.72rem;opacity:0.7">${e.activeTitle} </span>` : ''}${e.name}
+      <div style="font-weight:800;font-size:1.05rem;color:var(--prestige-color);margin-top:7px">
+        ${e.activeTitle?`<span style="font-size:0.7rem;opacity:0.75">${e.activeTitle} </span>`:''}${e.name}
       </div>
-      <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">${pc?.label||''}</div>
+      <div style="font-size:0.73rem;color:var(--text-muted);margin-top:2px">${pc?.label||''}</div>
     </div>
-
-    <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;
-      letter-spacing:0.07em;margin-bottom:6px;text-align:center">⭐ Vitrine</div>
+    <div style="font-size:0.64rem;color:var(--text-muted);text-transform:uppercase;
+      letter-spacing:0.07em;margin-bottom:5px;text-align:center">⭐ Vitrine</div>
     <div style="display:flex;gap:8px;justify-content:center;margin-bottom:4px">${showcaseHtml}</div>
 
     ${sec('👤','Profil')}
-    <div style="display:flex;flex-direction:column;gap:5px">
+    <div style="display:flex;flex-direction:column;gap:4px">
       ${row('Rang', e.rank||'–', true)}
       ${row('Modul', e.module||'–')}
-      ${row('Prestige', e.prestige>0 ? `${pc?.icon||''} Level ${e.prestige}` : 'Standard')}
+      ${row('Prestige', e.prestige>0?`${pc?.icon} Level ${e.prestige}`:'Standard')}
     </div>
 
     ${sec('⚡','XP & Fortschritt')}
-    <div style="display:flex;flex-direction:column;gap:5px">
+    <div style="display:flex;flex-direction:column;gap:4px">
       ${row('Gesamt-XP', `${(e.totalXP||e.xp||0).toLocaleString('de-DE')} XP`, true)}
-      ${row('Abzeichen', pct(e.badges||0, totalBadges))}
-      ${row('Achievements', pct(e.achievements||0, totalAchs))}
+      ${row('Abzeichen', pct(e.badges||0, totBadges))}
+      ${row('Achievements', pct(e.achievements||0, totAchs))}
     </div>
 
-    ${sec('🔥','Streak & Activity')}
-    <div style="display:flex;flex-direction:column;gap:5px">
+    ${sec('🔥','Streak')}
+    <div style="display:flex;flex-direction:column;gap:4px">
       ${row('Aktuelle Streak', `${e.streakFactor||0} Tag(e)`, (e.streakFactor||0)>=10)}
       ${row('Rekord-Streak', `${e.streakMax||0} Tag(e)`)}
-      <div style="padding:7px 12px;background:rgba(255,255,255,0.04);border-radius:8px;font-size:0.83rem">
-        <span style="color:var(--text-muted)">Activity Bar</span>${actBar}
-      </div>
     </div>
 
     ${sec('🎯','Challenges')}
-    <div style="display:flex;flex-direction:column;gap:5px">
+    <div style="display:flex;flex-direction:column;gap:4px">
       ${row('Daily gesamt', e.streakCount||0)}
       ${row('Weekly gesamt', e.weeklyCount||0)}
     </div>
 
     ${sec('🗺️','Office Map')}
-    <div style="display:flex;flex-direction:column;gap:5px">
+    <div style="display:flex;flex-direction:column;gap:4px">
       ${row('Streak', `${e.officeMapStreak||0} Tag(e)`)}
       ${row('Gesamt Check-ins', e.officeMapTotal||0)}
     </div>`;
 
-  // --- Admin-Sektionen ---
+  // Admin-Sektionen
   if (isAdmin) {
-    const fTs = ts => ts ? new Date(ts).toLocaleString('de-DE',{dateStyle:'short',timeStyle:'short'}) : '–';
-
-    // Klickbare Popups für Listen
-    const makeListBtn = (label, items, emoji='📋') => {
-      if (!items?.length) return `<div style="font-size:0.78rem;color:var(--text-muted);font-style:italic">${label}: keine</div>`;
-      const safItems = JSON.stringify(items).replace(/'/g,"&#39;");
-      return `<button onclick='_showDetailList(${safItems},"${label}")'
-        style="background:rgba(255,255,255,0.06);border:1px solid var(--card-border);color:var(--cream);
-        cursor:pointer;padding:6px 12px;border-radius:8px;font-size:0.78rem;font-family:var(--font-main);
-        width:100%;text-align:left;transition:background .2s"
-        onmouseover="this.style.background='rgba(255,255,255,0.12)'"
-        onmouseout="this.style.background='rgba(255,255,255,0.06)'">${emoji} ${label} (${items.length}) →</button>`;
+    // Klickbare Listen-Buttons
+    const listBtn = (label, items, emoji) => {
+      if (!items?.length) return `<div style="font-size:0.78rem;color:var(--text-muted);padding:4px 0">${emoji} ${label}: keine</div>`;
+      const safe = encodeURIComponent(JSON.stringify(items));
+      return `<button onclick="_showDetailList(decodeURIComponent('${safe}'),'${label}')"
+        style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--card-border);
+        color:var(--cream);cursor:pointer;padding:7px 12px;border-radius:9px;font-size:0.79rem;
+        font-family:var(--font-main);text-align:left;transition:background .15s;display:flex;justify-content:space-between;align-items:center"
+        onmouseover="this.style.background='rgba(255,255,255,0.10)'"
+        onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+        <span>${emoji} ${label}</span>
+        <span style="color:var(--text-muted);font-size:0.72rem">${items.length} →</span></button>`;
     };
 
-    // Achievement-Namen für Popup
     const achNames = (e.allAchievements||[]).map(id => {
-      const a = (typeof ACHIEVEMENTS!=='undefined') ? ACHIEVEMENTS.find(x=>x.id===id) : null;
+      const a = ACHIEVEMENTS.find(x=>x.id===id);
       return a ? `${a.emoji} ${a.name}` : id;
     });
 
     html += `
-    <div style="margin-top:16px;padding-top:14px;border-top:1.5px solid rgba(245,158,11,0.3)">
-      <div style="font-size:0.68rem;color:var(--warning);text-transform:uppercase;
-        letter-spacing:0.07em;margin-bottom:10px;font-family:var(--font-main)">🛡️ Erweiterte Admin-Ansicht</div>
+    <div style="margin-top:14px;padding-top:13px;border-top:1.5px solid rgba(245,158,11,0.35)">
+      <div style="font-size:0.66rem;color:var(--warning);text-transform:uppercase;
+        letter-spacing:0.08em;margin-bottom:10px">🛡️ Erweiterte Admin-Ansicht</div>
+
+      ${sec('📋','Freigeschaltete Inhalte')}
+      <div style="display:flex;flex-direction:column;gap:5px">
+        ${listBtn('Alle Titel', e.allTitles, '🏷️')}
+        ${listBtn('Alle Abzeichen', e.allBadges, '🏅')}
+        ${listBtn('Alle Achievements', achNames, '🏆')}
+      </div>
 
       ${sec('🔥','Streak-Details')}
-      <div style="display:flex;flex-direction:column;gap:5px">
+      <div style="display:flex;flex-direction:column;gap:4px">
         ${row('Streak Freezes', `${e.streakFreezes??'–'} verfügbar`)}
         ${row('Streak eingefroren?', e.streakFrozen?'❄️ Ja':'Nein')}
-        ${row('Daily heute?', e.dailyDoneToday?'✅ Ja':'❌ Nein')}
-        ${row('Weekly diese Wo.?', e.weeklyDoneThisWeek?'✅ Ja':'❌ Nein')}
+        ${row('Daily heute erledigt?', e.dailyDoneToday?'✅ Ja':'❌ Nein')}
+        ${row('Weekly diese Woche?', e.weeklyDoneThisWeek?'✅ Ja':'❌ Nein')}
+      </div>
+
+      ${sec('⚖️','Activity Bar')}
+      <div style="padding:7px 11px;background:rgba(255,255,255,0.04);border-radius:8px">
+        ${actBarHtml}
       </div>
 
       ${sec('🎯','Modul-Challenges')}
-      <div style="display:flex;flex-direction:column;gap:5px">
+      <div style="display:flex;flex-direction:column;gap:4px">
         ${row('Modul Daily gesamt', e.modulDailyCount||0)}
         ${row('Modul Weekly gesamt', e.modulWeeklyCount||0)}
       </div>
 
-      ${sec('📋','Freigeschaltete Inhalte')}
-      <div style="display:flex;flex-direction:column;gap:6px">
-        ${makeListBtn('Alle Titel', e.allTitles, '🏷️')}
-        ${makeListBtn('Alle Abzeichen', e.allBadges, '🏅')}
-        ${makeListBtn('Alle Achievements', achNames, '🏆')}
-      </div>
-
       ${sec('⚙️','Nutzungsdaten')}
-      <div style="display:flex;flex-direction:column;gap:5px">
+      <div style="display:flex;flex-direction:column;gap:4px">
         ${row('Berufsschultage', e.schoolDayCount!=null?`${e.schoolDayCount} Tag(e)`:'–')}
         ${row('Abwesenheiten', e.absenceCount!=null?`${e.absenceCount} eingetragen`:'–')}
         ${row('Gesamt-Öffnungen', e.totalOpenCount||'–')}
-        ${row('Ø Klicks/Tag', e.avgClicksPerDay!=null?e.avgClicksPerDay:'–')}
+        ${row('Ø Klicks/Tag', e.avgClicksPerDay??'–')}
         ${row('Erster Start', fTs(e.firstLogin))}
         ${row('Letzter Login', fTs(e.updated))}
         ${row('Letzter Code', fTs(e.lastCodeTs))}
         ${row('Intro abgeschlossen', e.introCompleted?'✅ Ja':'❌ Nein')}
-        ${e.isTestUser?'<div style="padding:6px 10px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:8px;color:var(--warning);font-size:0.78rem;text-align:center;margin-top:2px">🧪 Test-User</div>':''}
+        ${e.isTestUser?`<div style="padding:5px 10px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:7px;color:var(--warning);font-size:0.76rem;text-align:center">🧪 Test-Eintrag</div>`:''}
       </div>
     </div>`;
   }
 
-  // Modal öffnen
+  // Modal öffnen / wiederverwenden
   let overlay = document.getElementById('infoModalOverlay');
   if (!overlay) {
     overlay = document.createElement('div');
     overlay.id = 'infoModalOverlay';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9900;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px)';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9900;background:rgba(0,0,0,0.72);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px)';
     overlay.innerHTML = `<div class="info-modal" id="infoModalInner"
-      style="max-width:400px;width:94%;max-height:88vh;overflow-y:auto;padding:20px"></div>`;
-    overlay.addEventListener('click', ev => { if (ev.target===overlay) overlay.remove(); });
+      style="max-width:400px;width:94%;max-height:88vh;overflow-y:auto;padding:20px 18px"></div>`;
+    overlay.addEventListener('click', ev => { if(ev.target===overlay) overlay.remove(); });
     document.body.appendChild(overlay);
   }
   overlay.style.display = 'flex';
@@ -5499,19 +5516,22 @@ function openUserDetailLive(btn) {
         onclick="document.getElementById('infoModalOverlay').remove()">Schließen</button></div>`;
 }
 
-/** Hilfsfunktion: Liste in Mini-Overlay anzeigen (für Admin-Popups) */
-function _showDetailList(items, title) {
-  const existing = document.getElementById('_detailListOverlay');
-  if (existing) existing.remove();
+/** Hilfsfunktion: Admin-Detail-Listen in Mini-Overlay */
+function _showDetailList(itemsJson, title) {
+  const items = typeof itemsJson === 'string' ? JSON.parse(itemsJson) : itemsJson;
+  const ex = document.getElementById('_detailListOverlay');
+  if (ex) ex.remove();
   const ov = document.createElement('div');
   ov.id = '_detailListOverlay';
   ov.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)';
-  ov.innerHTML = `<div style="background:var(--navy-light);border:1px solid var(--card-border);border-radius:16px;
-    padding:20px;max-width:340px;width:92%;max-height:70vh;overflow-y:auto;box-shadow:var(--shadow)">
-    <div style="font-weight:800;color:var(--prestige-color);margin-bottom:12px;font-family:var(--font-main)">${title}</div>
-    <div style="display:flex;flex-direction:column;gap:5px">
-      ${items.map(it=>`<div style="padding:6px 10px;background:rgba(255,255,255,0.04);border-radius:7px;font-size:0.82rem">${it}</div>`).join('')}
-    </div>
+  ov.innerHTML = `<div style="background:var(--navy-light);border:1px solid var(--card-border);
+    border-radius:16px;padding:18px;max-width:340px;width:92%;max-height:70vh;overflow-y:auto;box-shadow:var(--shadow)">
+    <div style="font-weight:800;color:var(--prestige-color);margin-bottom:10px;font-size:0.9rem">${title} (${items.length})</div>
+    ${items.length
+      ? `<div style="display:flex;flex-direction:column;gap:4px">
+          ${items.map(it=>`<div style="padding:5px 9px;background:rgba(255,255,255,0.04);border-radius:7px;font-size:0.81rem">${it}</div>`).join('')}
+        </div>`
+      : `<div style="color:var(--text-muted);font-size:0.82rem">Keine Einträge.</div>`}
     <div style="text-align:right;margin-top:12px">
       <button class="btn btn-ghost btn-sm" onclick="document.getElementById('_detailListOverlay').remove()">← Zurück</button>
     </div>
