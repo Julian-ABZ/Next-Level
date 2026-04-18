@@ -1207,55 +1207,48 @@ function _fbKey(name) {
 window.firebaseUploadScore = async function(st) {
   if (!st.name) return;
   try {
-    const rankName  = (typeof getCurrentRank === 'function') ? getCurrentRank().name : '';
-    const modAbbr   = (typeof getModuleAbbr  === 'function') ? getModuleAbbr(st.module) : (st.module || '–');
-    const todayStr  = (typeof getTodayStr  === 'function') ? getTodayStr()  : '';
-    const weekKey   = (typeof getWeekKey   === 'function') ? getWeekKey()   : '';
+    const rankName = (typeof getCurrentRank === 'function') ? getCurrentRank().name : '';
+    const modAbbr  = (typeof getModuleAbbr  === 'function') ? getModuleAbbr(st.module) : (st.module || '–');
+    const todayStr = (typeof getTodayStr === 'function') ? getTodayStr() : '';
+    const weekKey  = (typeof getWeekKey  === 'function') ? getWeekKey()  : '';
 
-    // Vitrine
     const showcaseObjs = (st.showcase || []).map(id => {
       const a = (typeof ACHIEVEMENTS !== 'undefined') ? ACHIEVEMENTS.find(x => x.id === id) : null;
       return a ? { id, emoji: a.emoji, name: a.name } : null;
     }).filter(Boolean);
 
-    // Aktiver Titel
     const achObj = (typeof getAchById === 'function') ? getAchById(st.activeTitle) : null;
     const activeTitleText = achObj?.title
       ? (st.gender === 'male' ? achObj.title.male : achObj.title.female) : '';
 
-    // Alle freigeschalteten Titel
     const allTitles = (typeof ACHIEVEMENTS !== 'undefined')
       ? ACHIEVEMENTS.filter(a => a.title && (st.unlockedAchievements||[]).some(u => u.id === a.id))
           .map(a => st.gender === 'male' ? a.title.male : a.title.female)
       : [];
 
-    // Freezes
     const freezesRem = Math.max(0, (st.streakTotalFreezes||3) - (st.streakFreezesUsed||0));
-
-    // Letzter Code
     const lastCodeTs = (st.usedCodes||[]).length
       ? Math.max(...st.usedCodes.map(c => c.ts||0)) : null;
 
-    // Abzeichen- und Achievement-Listen (max. 60 Einträge)
-    const allBadges      = (st.unlockedBadges||[]).map(b=>b.name).slice(0,60);
-    const allAchievements = (st.unlockedAchievements||[]).map(a=>a.id).slice(0,60);
-
     await _db.ref('leaderboard/' + _fbKey(st.name)).update({
-      // Basis
       name:        st.name,
-      xp:          st.xp         || 0,
-      totalXP:     st.totalXP    || st.xp || 0,
-      prestige:    st.prestige   || 0,
+      xp:          st.xp || 0,
+      totalXP:     st.totalXP || st.xp || 0,
+      prestige:    st.prestige || 0,
       rank:        rankName,
       module:      modAbbr,
+      moduleFull:  st.module || '',
       badges:      (st.unlockedBadges||[]).length,
       achievements:(st.unlockedAchievements||[]).length,
-      gender:      st.gender     || 'female',
+      gender:      st.gender || 'female',
       profilePic:  st.profilePic || '',
       showcase:    showcaseObjs,
       activeTitle: activeTitleText,
       firstLogin:  st.firstOpenTs || Date.now(),
       updated:     Date.now(),
+      // Für Seltenheits-Berechnung
+      allBadges:       (st.unlockedBadges||[]).map(b=>b.name).slice(0,60),
+      allAchievements: (st.unlockedAchievements||[]).map(a=>a.id).slice(0,60),
       // Für alle sichtbar
       streakFactor:    st.streakFactor    || 0,
       streakMax:       st.streakMax       || 0,
@@ -1264,7 +1257,7 @@ window.firebaseUploadScore = async function(st) {
       weeklyCount:     Object.keys(st.weeklyDone||{}).length,
       officeMapStreak: st.officeMapStreak || 0,
       officeMapTotal:  st.officeMapTotal  || 0,
-      // Nur Admin
+      // Admin
       streakFreezes:      freezesRem,
       streakFrozen:       st.streakFrozen || false,
       dailyDoneToday:     !!(st.dailyDone||{})[todayStr],
@@ -1279,33 +1272,25 @@ window.firebaseUploadScore = async function(st) {
       lastCodeTs,
       introCompleted: st.introCompleted || false,
       allTitles,
-      allBadges,
-      allAchievements,
     });
   } catch(e) { console.warn('Firebase Upload Fehler:', e); }
 };
 
-/** Live-Listener: Bestenliste in Echtzeit empfangen — mit Null-Filterung */
+/** Live-Listener — Null-Filterung, alle User inkl. Test-User */
 window.firebaseSubscribeLeaderboard = function(callback) {
   _db.ref('leaderboard').on('value', snap => {
     const entries = [];
-    snap.forEach(child => {
-      const v = child.val();
-      if (v && v.name && !v.isTestUser) entries.push(v);  // Null + Test-User aus LB raus
-    });
+    snap.forEach(child => { const v = child.val(); if (v && v.name) entries.push(v); });
     entries.sort((a, b) => (b.xp || 0) - (a.xp || 0));
     callback(entries);
   }, err => console.warn('Firebase Listener Fehler:', err));
 };
 
-/** Admin: Alle User aus RTDB laden (inkl. Test-User) */
+/** Admin: Alle User aus RTDB */
 window.firebaseGetAllUsers = async function() {
   const snap = await _db.ref('leaderboard').once('value');
   const users = [];
-  snap.forEach(child => {
-    const v = child.val();
-    if (v && v.name) users.push(v);  // nur Null rausfiltern
-  });
+  snap.forEach(child => { const v = child.val(); if (v && v.name) users.push(v); });
   return users;
 };
 
@@ -5142,8 +5127,23 @@ function initLiveLeaderboard() {
   if (typeof window.firebaseSubscribeLeaderboard !== 'function') return;
   window.firebaseSubscribeLeaderboard(entries => {
     _lbLiveData = entries;
+    // Seltenheits-Daten aus Firebase-Einträgen berechnen (nur echte User)
+    _computeRarityFromFirebase(entries);
     renderLiveLeaderboard();
   });
+}
+
+/** Berechnet Seltenheits-Daten aus Firebase-Einträgen */
+function _computeRarityFromFirebase(entries) {
+  const real  = entries.filter(e => !e.isTestUser);
+  const total = real.length;
+  if (total < 2) { state._rarityData = {}; return; }
+  const badgeCounts = {}, achCounts = {};
+  real.forEach(e => {
+    (e.allBadges       || []).forEach(n  => { badgeCounts[n]  = (badgeCounts[n] ||0)+1; });
+    (e.allAchievements || []).forEach(id => { achCounts[id]   = (achCounts[id]  ||0)+1; });
+  });
+  state._rarityData = { badgeCounts, achCounts, total };
 }
 
 function filterLeaderboardLive(mod, btn) {
@@ -5344,64 +5344,96 @@ function showModuleStats() {
    NEU: SPIELER-INFO aus Live-Bestenliste (Firebase-Daten)
    Alle User sehen Vitrine + Basis-Info; Admins sehen mehr.
    ═══════════════════════════════════════════════════════════ */
+// Temporärer Speicher für Listen-Popups
+window._dlStore = [];
+
+function _showDetailList(idx, title) {
+  const items = window._dlStore[idx] || [];
+  const ex = document.getElementById('_detailListOv');
+  if (ex) ex.remove();
+  const ov = document.createElement('div');
+  ov.id = '_detailListOv';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)';
+  ov.innerHTML = `<div style="background:var(--navy-light);border:1px solid var(--card-border);
+    border-radius:16px;padding:18px;max-width:340px;width:92%;max-height:72vh;overflow-y:auto;box-shadow:var(--shadow)">
+    <div style="font-weight:800;color:var(--prestige-color);margin-bottom:10px">${title} (${items.length})</div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      ${items.length
+        ? items.map(it=>`<div style="padding:5px 9px;background:rgba(255,255,255,0.04);border-radius:7px;font-size:0.81rem">${it}</div>`).join('')
+        : `<div style="color:var(--text-muted);font-size:0.82rem">Keine Einträge.</div>`}
+    </div>
+    <div style="text-align:right;margin-top:12px">
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('_detailListOv').remove()">← Zurück</button>
+    </div></div>`;
+  ov.addEventListener('click', ev => { if(ev.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
+}
+
 function openUserDetailLive(btn) {
   let e;
   try { e = JSON.parse(btn.dataset.entry.replace(/&#39;/g, "'")); } catch { return; }
 
-  const isAdmin   = state._isAdmin;
-  const pc        = getPrestigeConfig(e.prestige || 0);
+  const isAdmin = state._isAdmin;
+  const pc      = getPrestigeConfig(e.prestige || 0);
+
+  // Modul: Langversion aus Reverse-Lookup
+  const moduleFull = e.moduleFull ||
+    Object.entries(MODULE_ABBR).find(([,v]) => v === e.module)?.[0] || e.module || '–';
+
   const totBadges = CODES.filter(c=>!c.adminOnly).length + WEEKLY_CHALLENGES.length + EASTER_BADGES.length;
   const totAchs   = ACHIEVEMENTS.length;
-  const pct = (n,t) => t > 0 ? `${n}/${t} (${Math.round(n/t*100)}%)` : `${n}`;
-  const fTs = ts  => ts ? new Date(ts).toLocaleString('de-DE',{dateStyle:'short',timeStyle:'short'}) : '–';
-  const row = (lbl,val,gold=false) =>
+  const pct  = (n,t) => t>0 ? `${n}/${t} (${Math.round(n/t*100)}%)` : `${n}`;
+  const fTs  = ts  => ts ? new Date(ts).toLocaleString('de-DE',{dateStyle:'short',timeStyle:'short'}) : '–';
+  const row  = (lbl,val,gold=false) =>
     `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 11px;
       background:rgba(255,255,255,0.04);border-radius:8px;font-size:0.82rem">
       <span style="color:var(--text-muted)">${lbl}</span>
       <strong${gold?' style="color:var(--prestige-color)"':''}>${val??'–'}</strong></div>`;
-  const sec = (icon,lbl) =>
-    `<div style="font-size:0.66rem;color:var(--text-muted);text-transform:uppercase;
+  const sec  = (icon,lbl) =>
+    `<div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;
       letter-spacing:0.08em;margin:13px 0 5px;font-family:var(--font-main)">${icon} ${lbl}</div>`;
-
-  // Profilbild
-  const picHtml = e.profilePic
-    ? `<img src="${e.profilePic}" style="width:58px;height:58px;border-radius:50%;object-fit:cover">`
-    : `<span style="font-size:2.6rem">👤</span>`;
 
   // Vitrine — leere Slots = wirklich leer
   const showcaseHtml = [0,1,2].map(i => {
     const a = (e.showcase||[])[i];
     if (!a) return `<div style="width:50px;height:50px;border-radius:11px;
-      background:rgba(255,255,255,0.03);border:1.5px dashed rgba(120,138,172,0.25)"></div>`;
+      background:rgba(255,255,255,0.03);border:1.5px dashed rgba(120,138,172,0.22)"></div>`;
     return `<div title="${a.name}" style="width:50px;height:50px;border-radius:11px;
       background:rgba(255,255,255,0.06);border:1.5px solid var(--prestige-color);
       display:flex;align-items:center;justify-content:center;font-size:1.4rem">${a.emoji}</div>`;
   }).join('');
 
+  // Profilbild
+  const picHtml = e.profilePic && !e.profilePic.startsWith('http') === false || e.profilePic?.length > 4
+    ? `<img src="${e.profilePic}" style="width:58px;height:58px;border-radius:50%;object-fit:cover">`
+    : e.profilePic
+      ? `<span style="font-size:2.6rem">${e.profilePic}</span>`
+      : `<span style="font-size:2.6rem">👤</span>`;
+
   // Activity-Bar (nur Admin)
   const actPct = Math.round(((e.activityPos||20)/40)*100);
   const actCol = actPct>=75?'#ef4444':actPct>=50?'#f97316':actPct>=25?'#3b82f6':'#60aff5';
-  const actBarHtml = `<div style="background:rgba(255,255,255,0.07);border-radius:50px;height:7px;margin:4px 0 2px;overflow:hidden">
+  const actBar = `<div style="background:rgba(255,255,255,0.07);border-radius:50px;height:7px;margin:4px 0 2px;overflow:hidden">
     <div style="height:100%;width:${actPct}%;background:${actCol};border-radius:50px"></div></div>
     <span style="font-size:0.70rem;color:var(--text-muted)">${e.activityPos||20}/40</span>`;
 
-  // Basis-HTML (für alle)
+  // Normale Sektionen
   let html = `
     <div style="text-align:center;padding:6px 0 12px">
       ${picHtml}
       <div style="font-weight:800;font-size:1.05rem;color:var(--prestige-color);margin-top:7px">
-        ${e.activeTitle?`<span style="font-size:0.7rem;opacity:0.75">${e.activeTitle} </span>`:''}${e.name}
+        ${e.activeTitle?`<span style="font-size:0.70rem;opacity:0.7">${e.activeTitle} </span>`:''}${e.name}
       </div>
       <div style="font-size:0.73rem;color:var(--text-muted);margin-top:2px">${pc?.label||''}</div>
     </div>
-    <div style="font-size:0.64rem;color:var(--text-muted);text-transform:uppercase;
+    <div style="font-size:0.63rem;color:var(--text-muted);text-transform:uppercase;
       letter-spacing:0.07em;margin-bottom:5px;text-align:center">⭐ Vitrine</div>
     <div style="display:flex;gap:8px;justify-content:center;margin-bottom:4px">${showcaseHtml}</div>
 
     ${sec('👤','Profil')}
     <div style="display:flex;flex-direction:column;gap:4px">
       ${row('Rang', e.rank||'–', true)}
-      ${row('Modul', e.module||'–')}
+      ${row('Modul', moduleFull)}
       ${row('Prestige', e.prestige>0?`${pc?.icon} Level ${e.prestige}`:'Standard')}
     </div>
 
@@ -5432,14 +5464,14 @@ function openUserDetailLive(btn) {
 
   // Admin-Sektionen
   if (isAdmin) {
-    // Klickbare Listen-Buttons
+    // Listen-Button-Hilfsfunktion
     const listBtn = (label, items, emoji) => {
-      if (!items?.length) return `<div style="font-size:0.78rem;color:var(--text-muted);padding:4px 0">${emoji} ${label}: keine</div>`;
-      const safe = encodeURIComponent(JSON.stringify(items));
-      return `<button onclick="_showDetailList(decodeURIComponent('${safe}'),'${label}')"
+      const idx = window._dlStore.push(items) - 1;
+      return `<button onclick="_showDetailList(${idx},'${label}')"
         style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--card-border);
         color:var(--cream);cursor:pointer;padding:7px 12px;border-radius:9px;font-size:0.79rem;
-        font-family:var(--font-main);text-align:left;transition:background .15s;display:flex;justify-content:space-between;align-items:center"
+        font-family:var(--font-main);text-align:left;transition:background .15s;
+        display:flex;justify-content:space-between;align-items:center"
         onmouseover="this.style.background='rgba(255,255,255,0.10)'"
         onmouseout="this.style.background='rgba(255,255,255,0.05)'">
         <span>${emoji} ${label}</span>
@@ -5453,13 +5485,13 @@ function openUserDetailLive(btn) {
 
     html += `
     <div style="margin-top:14px;padding-top:13px;border-top:1.5px solid rgba(245,158,11,0.35)">
-      <div style="font-size:0.66rem;color:var(--warning);text-transform:uppercase;
+      <div style="font-size:0.64rem;color:var(--warning);text-transform:uppercase;
         letter-spacing:0.08em;margin-bottom:10px">🛡️ Erweiterte Admin-Ansicht</div>
 
       ${sec('📋','Freigeschaltete Inhalte')}
       <div style="display:flex;flex-direction:column;gap:5px">
-        ${listBtn('Alle Titel', e.allTitles, '🏷️')}
-        ${listBtn('Alle Abzeichen', e.allBadges, '🏅')}
+        ${listBtn('Alle Titel', e.allTitles||[], '🏷️')}
+        ${listBtn('Alle Abzeichen', e.allBadges||[], '🏅')}
         ${listBtn('Alle Achievements', achNames, '🏆')}
       </div>
 
@@ -5467,14 +5499,12 @@ function openUserDetailLive(btn) {
       <div style="display:flex;flex-direction:column;gap:4px">
         ${row('Streak Freezes', `${e.streakFreezes??'–'} verfügbar`)}
         ${row('Streak eingefroren?', e.streakFrozen?'❄️ Ja':'Nein')}
-        ${row('Daily heute erledigt?', e.dailyDoneToday?'✅ Ja':'❌ Nein')}
-        ${row('Weekly diese Woche?', e.weeklyDoneThisWeek?'✅ Ja':'❌ Nein')}
+        ${row('Daily heute?', e.dailyDoneToday?'✅ Ja':'❌ Nein')}
+        ${row('Weekly diese Wo.?', e.weeklyDoneThisWeek?'✅ Ja':'❌ Nein')}
       </div>
 
       ${sec('⚖️','Activity Bar')}
-      <div style="padding:7px 11px;background:rgba(255,255,255,0.04);border-radius:8px">
-        ${actBarHtml}
-      </div>
+      <div style="padding:7px 11px;background:rgba(255,255,255,0.04);border-radius:8px">${actBar}</div>
 
       ${sec('🎯','Modul-Challenges')}
       <div style="display:flex;flex-direction:column;gap:4px">
@@ -5492,12 +5522,13 @@ function openUserDetailLive(btn) {
         ${row('Letzter Login', fTs(e.updated))}
         ${row('Letzter Code', fTs(e.lastCodeTs))}
         ${row('Intro abgeschlossen', e.introCompleted?'✅ Ja':'❌ Nein')}
-        ${e.isTestUser?`<div style="padding:5px 10px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:7px;color:var(--warning);font-size:0.76rem;text-align:center">🧪 Test-Eintrag</div>`:''}
+        ${e.isTestUser?`<div style="padding:5px 10px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:7px;color:var(--warning);font-size:0.76rem;text-align:center;margin-top:2px">🧪 Test-Eintrag</div>`:''}
       </div>
     </div>`;
   }
 
-  // Modal öffnen / wiederverwenden
+  // Modal öffnen
+  window._dlStore = [];  // Store bei jedem Öffnen zurücksetzen
   let overlay = document.getElementById('infoModalOverlay');
   if (!overlay) {
     overlay = document.createElement('div');
