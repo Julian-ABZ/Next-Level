@@ -1144,20 +1144,30 @@ code { font-family:'Courier New',monospace;font-size:0.82em;background:rgba(255,
 
 <!-- Firebase Compat SDK (synchron, kein type="module" nötig) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
 <script>
   // ════════════════════════════════════════
-  // FIREBASE KONFIGURATION — deine Daten bleiben gleich
+  // FIREBASE KONFIGURATION — JETZT AKTUALISIERT
   // ════════════════════════════════════════
-  firebase.initializeApp({
-    apiKey:            "neu machen",
-    authDomain:        "next-level-abz.firebaseapp.com",
-    projectId:         "next-level-abz",
-    storageBucket:     "next-level-abz.firebasestorage.app",
-    messagingSenderId: "neu machen",
-    appId:             "neu machen"
-  });
-  const _fbDB = firebase.firestore();
+  const firebaseConfig = {
+    apiKey: "AIzaSyDv5smRHr2v8bESslKkcHD92Ef9P8iXTOI", // Dein neuer, sicherer Key
+    authDomain: "next-level-abz.firebaseapp.com",
+    databaseURL: "https://next-level-abz-default-rtdb.europe-west1.firebasedatabase.app", // WICHTIG für Bestenliste
+    projectId: "next-level-abz",
+    storageBucket: "next-level-abz.firebasestorage.app",
+    messagingSenderId: "848071021663",
+    appId: "1:848071021663:web:c418ea5269cae7a20fb7ea"
+  };
+
+  // Initialisierung
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+  }
+
+  // Das hier ist das "Gehirn" für deine Bestenliste (Realtime Database)
+  const _db = firebase.database(); 
+</script>
 
   window.firebaseUploadScore = async function(state) {
     if (!state.name) return;
