@@ -1314,6 +1314,17 @@ window.firebaseSetInactive = async function(name) {
   await _db.ref('leaderboard/' + _fbKey(name)).remove();
 };
 
+/** Admin: User aus Archiv reaktivieren */
+window.firebaseReactivateUser = async function(name) {
+  const snap = await _db.ref('archiv/' + _fbKey(name)).once('value');
+  const data = snap.val();
+  if (!data) throw new Error('User nicht im Archiv gefunden');
+  // Zurück in Bestenliste
+  const { isInactive, inactiveSince, ...rest } = data;
+  await _db.ref('leaderboard/' + _fbKey(name)).set(rest);
+  // Aus Archiv entfernen
+  await _db.ref('archiv/' + _fbKey(name)).remove();
+};
 /** Admin: Alle Archiv-User laden */
 window.firebaseGetArchivUsers = async function() {
   const snap = await _db.ref('archiv').once('value');
@@ -4737,10 +4748,10 @@ function sortBadges(arr) {
             <span class="badge-cookie-mini">${b.emoji}</span>
             <span class="badge-cookie-mini">${b.emoji}</span>
           </div>
-badge-name">${getGenderedBadgeName(b.name, state.gender)}</div>
+<div class="badge-name">${getGenderedBadgeName(b.name, state.gender)}</div>
         </div>
         <div class="badge-tooltip">
-          <div class="badge-tooltip-name">${b.name}</div>
+          <div class="badge-tooltip-name">${getGenderedBadgeName(b.name, state.gender)}</div>
           <div class="badge-tooltip-desc">${b.desc||''}</div>
         </div>
       </div>`;
@@ -4748,7 +4759,7 @@ badge-name">${getGenderedBadgeName(b.name, state.gender)}</div>
     return `<div class="badge-wrap">
       <div class="badge-card ${lockedClass}${adminClass}" ${adminClick}>
         <span class="badge-emoji">${b.emoji}</span>
-badge-name">${getGenderedBadgeName(b.name, state.gender)}</div>
+        <div class="badge-name">${getGenderedBadgeName(b.name, state.gender)}</div>
       </div>
       <div class="badge-tooltip">
         <div class="badge-tooltip-name">${b.name}</div>
@@ -4863,16 +4874,29 @@ spclEl.innerHTML = SPECIAL_BADGES.map(sb => {
     }).join('');
   }
 
-  document.querySelectorAll('.badge-section-title').forEach(title => {
+document.querySelectorAll('.badge-section-title').forEach(title => {
     if (title.dataset.accordionReady) return;
     title.dataset.accordionReady = 'true';
     title.style.cursor = 'pointer';
+    title.style.userSelect = 'none';
+    // ▾ Indikator anhängen (nur einmal)
+    if (!title.querySelector('.badge-acc-icon')) {
+      const icon = document.createElement('span');
+      icon.className = 'badge-acc-icon';
+      icon.style.cssText = 'margin-left:auto;font-size:0.75rem;transition:transform .25s;display:inline-block;opacity:0.6';
+      icon.textContent = ' ▾';
+      title.style.display = 'flex';
+      title.style.alignItems = 'center';
+      title.appendChild(icon);
+    }
     title.addEventListener('click', () => {
       const body = title.nextElementSibling;
+      const icon = title.querySelector('.badge-acc-icon');
       if (!body) return;
-      const hidden = body.style.display === 'none';
-      body.style.display = hidden ? '' : 'none';
-      title.dataset.collapsed = hidden ? '' : 'true';
+      const isOpen = body.style.display !== 'none';
+      body.style.display = isOpen ? 'none' : '';
+      if (icon) icon.textContent = isOpen ? ' ▸' : ' ▾';
+      title.dataset.collapsed = isOpen ? 'true' : '';
     });
   });
 }
@@ -5782,6 +5806,10 @@ function openSettings() {
   const modEl = document.getElementById('settingsModuleDisplay');
   if (modEl) modEl.textContent = state.module || '–';
 
+// Name-Feld mit aktuellem Namen befüllen
+  const ni = document.getElementById('settingsNameInput');
+  if (ni) ni.value = state.name || '';
+
   // Anrede
   selectGender(state.gender, false);
 
@@ -5819,8 +5847,9 @@ if (umBtn) umBtn.style.display = state._isAdmin ? '' : 'none';
 }
 
 function saveSettings() {
-  const newName = (document.getElementById('settingsNameInput')?.value||'').trim();
-  if (!newName) { showToast('⚠️ Nickname darf nicht leer sein.'); return; }
+  const rawInput = (document.getElementById('settingsNameInput')?.value||'').trim();
+  const newName  = rawInput || state.name;   // Leerfeld → aktuellen Namen behalten
+  if (!newName) { showToast('⚠️ Kein Name vorhanden.'); return; }
 
   // Easter Egg: umbenannt?
   if (newName !== state.name) {
@@ -6079,6 +6108,7 @@ function renderAdminCodeList() {
 
 function openAdminPanel() {
   document.getElementById('adminPanel')?.classList.add('visible');
+  state._isAdmin = true;   // ← Admin-Modus aktivieren
   renderAdminCodeList();
   showToast('🛡️ Admin-Konsole aktiviert!');
 
@@ -6107,7 +6137,8 @@ function closeAdminPanel() {
     saveState(); render();
     showToast('🗑️ Admin-Werte zurückgesetzt.');
   }
-document.getElementById('adminPanel')?.classList.remove('visible');
+state._isAdmin = false;   // ← Admin-Modus deaktivieren
+  document.getElementById('adminPanel')?.classList.remove('visible');
   document.getElementById('adminBadgeHint').style.display = 'none';
   // Bestenliste sofort ohne Admin-Augen neu rendern
   if (_lbAllEntries.length > 0) {
@@ -6266,24 +6297,50 @@ async function setInactiveUser(name) {
   } catch(e) { showToast('⚠️ Fehler: ' + e.message); }
 }
 
+async function reactivateUser(name) {
+  if (!confirm(`„${name}" reaktivieren?\n\nDer Account erscheint wieder in der aktiven Bestenliste.`)) return;
+  try {
+    await window.firebaseReactivateUser(name);
+    showToast(`✅ ${name} reaktiviert`);
+    loadUserMgmtList();
+  } catch(e) { showToast('⚠️ Fehler: ' + e.message); }
+}
+
 async function loadArchivList() {
   const wrap = document.getElementById('archivList');
   if (!wrap || typeof window.firebaseGetArchivUsers !== 'function') return;
   try {
     const users = await window.firebaseGetArchivUsers();
-    if (!users.length) { wrap.innerHTML = '<p style="color:var(--text-muted);font-size:0.82rem">Kein Archiv vorhanden.</p>'; return; }
+    if (!users.length) {
+      wrap.innerHTML = '<p style="color:var(--text-muted);font-size:0.82rem">📦 Kein Archiv vorhanden.</p>';
+      return;
+    }
     const sorted = [...users].sort((a,b) => (b.xp||0) - (a.xp||0));
     let html = `<div style="overflow-x:auto"><table class="lb-table" style="width:100%;font-size:0.80rem">
-      <thead><tr><th>#</th><th style="text-align:left">👤 Name</th><th>⚡ XP</th><th>🏅</th><th>📅 Inaktiv seit</th></tr></thead><tbody>`;
+      <thead><tr>
+        <th>#</th>
+        <th style="text-align:left">👤 Name</th>
+        <th>⚡ XP</th>
+        <th>🏅</th>
+        <th>📅 Inaktiv seit</th>
+        <th></th>
+      </tr></thead><tbody>`;
     sorted.forEach((e, i) => {
       const since = e.inactiveSince ? new Date(e.inactiveSince).toLocaleDateString('de-DE') : '–';
+      const safeName = (e.name||'').replace(/'/g,"\\'");
       html += `<tr>
         <td>${i+1}</td>
-        <td style="text-align:left"><strong>${e.name}</strong>
-          <div style="font-size:0.70rem;color:var(--text-muted)">${e.rank||'–'}</div></td>
+        <td style="text-align:left">
+          <strong>${e.name}</strong>
+          <div style="font-size:0.70rem;color:var(--text-muted)">${e.rank||'–'} · ${e.module||'–'}</div>
+        </td>
         <td><strong>${(e.xp||0).toLocaleString('de-DE')}</strong></td>
         <td>${e.badges||0}</td>
-        <td style="color:var(--text-muted)">${since}</td>
+        <td style="color:var(--text-muted);font-size:0.78rem">${since}</td>
+        <td>
+          <button class="btn btn-success btn-sm" style="padding:3px 7px;font-size:0.70rem"
+            onclick="reactivateUser('${safeName}')" title="Reaktivieren">♻️</button>
+        </td>
       </tr>`;
     });
     html += '</tbody></table></div>';
