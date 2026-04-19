@@ -1243,7 +1243,8 @@ window.firebaseUploadScore = async function(st) {
       gender:      st.gender || 'female',
       profilePic:  st.profilePic || '',
       showcase:    showcaseObjs,
-      activeTitle: activeTitleText,
+activeTitle: activeTitleText,
+      titlePos:    achObj?.title?.position || '',
       firstLogin:  st.firstOpenTs || Date.now(),
       updated:     Date.now(),
       // Für Seltenheits-Berechnung
@@ -2442,19 +2443,20 @@ window.firebaseCreateTestUser = async function(data) {
 
   <!-- Liste aller User -->
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-    <button class="btn btn-ghost btn-sm" onclick="loadUserMgmtList()">🔄 Aktualisieren</button>
+<button class="btn btn-ghost btn-sm" onclick="loadUserMgmtList()">🔄 Aktualisieren</button>
+    <button class="btn btn-ghost btn-sm" id="archivToggleBtn" onclick="toggleArchivSection()" style="background:rgba(245,158,11,0.10);border-color:rgba(245,158,11,0.4);color:var(--warning)">📦 Archiv</button>
     <span id="userMgmtCount" style="font-size:0.78rem;color:var(--text-muted)"></span>
   </div>
   <div id="userMgmtList"><p style="color:var(--text-muted);font-size:0.84rem">⏳ Lade Nutzer…</p></div>
 
-<div class="divider"></div>
-
-  <!-- Archiv inaktiver User -->
-  <div class="tile-title" style="font-size:0.95rem;margin-bottom:8px"><span class="icon">📦</span> Archiv — Inaktive User</div>
-  <p style="color:var(--text-muted);font-size:0.78rem;margin-bottom:10px">Ehemalige Azubis, nach Gesamt-XP sortiert. Können nicht mehr spielen.</p>
-  <div id="archivList"><p style="color:var(--text-muted);font-size:0.84rem">⏳ Lade Archiv…</p></div>
-
-  <div class="divider"></div>
+<!-- Archiv inaktiver User -->
+  <div id="archivSection" style="display:none">
+    <div class="divider"></div>
+    <div class="tile-title" style="font-size:0.95rem;margin-bottom:8px"><span class="icon">📦</span> Archiv — Inaktive User</div>
+    <p style="color:var(--text-muted);font-size:0.78rem;margin-bottom:10px">Ehemalige Azubis, nach Gesamt-XP sortiert. Können nicht mehr spielen.</p>
+    <div id="archivList"></div>
+    <div class="divider"></div>
+  </div>
 
   <!-- Test-User erstellen -->
   <div class="tile-title" style="font-size:0.95rem;margin-bottom:4px"><span class="icon">🧪</span> Test-User erstellen</div>
@@ -2828,10 +2830,10 @@ function getVisibleBadgeCount() {
 
 /** Anzahl freigeschalteter Easter-Egg-Abzeichen (ohne introOnly) */
 function getSecretBadgeCount() {
-  const secretIds = new Set(
-    EASTER_BADGES.filter(b => !b.introOnly && !b.cookie).map(b => b.name)
+  const secretNames = new Set(
+    CODES.filter(c => c.secret && !c.adminOnly).map(c => c.badge.name)
   );
-  return state.unlockedBadges.filter(b => secretIds.has(b.name)).length;
+  return state.unlockedBadges.filter(b => secretNames.has(b.name)).length;
 }
 
 /** Prüft ob alle Easter-Egg-Abzeichen (ohne introOnly) freigeschaltet sind */
@@ -3688,6 +3690,12 @@ function addLogbuchEntry(entry) {
 /* ═══════════════════════════════════════════════════════════
    17. HILFSFUNKTIONEN (benötigt in Part 2A)
    ═══════════════════════════════════════════════════════════ */
+
+function _setCatStats(id, count, total) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = ` <span>${count}</span>/${total}`;
+}
 
 /** Setzt den textContent eines Elements sicher */
 function _setEl(id, val, isHTML = false) {
@@ -4742,24 +4750,23 @@ function sortBadges(arr) {
       </div>`;
     }
     if (b.cookie) {
-      return `<div class="badge-wrap">
-        <div class="badge-card ${lockedClass}${adminClass}" ${adminClick}>
-          <div class="badge-cookie-wrap">
-            <span class="badge-cookie-mini">${b.emoji}</span>
-            <span class="badge-cookie-mini">${b.emoji}</span>
-          </div>
-<div class="badge-name">${getGenderedBadgeName(b.name, state.gender)}</div>
-        </div>
-        <div class="badge-tooltip">
-          <div class="badge-tooltip-name">${getGenderedBadgeName(b.name, state.gender)}</div>
-          <div class="badge-tooltip-desc">${b.desc||''}</div>
-        </div>
-      </div>`;
-    }
-    return `<div class="badge-wrap">
+return `<div class="badge-wrap">
       <div class="badge-card ${lockedClass}${adminClass}" ${adminClick}>
         <span class="badge-emoji">${b.emoji}</span>
         <div class="badge-name">${getGenderedBadgeName(b.name, state.gender)}</div>
+        ${rarityPill}
+      </div>
+      <div class="badge-tooltip">
+        <div class="badge-tooltip-name">${b.name}</div>
+        <div class="badge-tooltip-desc">${b.desc||''}</div>
+      </div>
+    </div>`;
+    }
+return `<div class="badge-wrap">
+      <div class="badge-card ${lockedClass}${adminClass}" ${adminClick}>
+        <span class="badge-emoji">${b.emoji}</span>
+        <div class="badge-name">${getGenderedBadgeName(b.name, state.gender)}</div>
+        ${rarityPill}
       </div>
       <div class="badge-tooltip">
         <div class="badge-tooltip-name">${b.name}</div>
@@ -4842,7 +4849,7 @@ spclEl.innerHTML = SPECIAL_BADGES.map(sb => {
       if (found === 0 && !isUnlocked) {
         const nameShown = gender === 'female' ? (sb.nameFemale || sb.nameMale) : sb.nameMale;
         return `<div class="badge-wrap" style="min-width:110px">
-          <div class="badge-card badge-locked" style="padding:10px 7px 8px;filter:grayscale(70%)">
+<div class="badge-card" style="padding:10px 7px 8px;filter:grayscale(85%);opacity:0.55">
             <span class="badge-emoji">${sb.emoji}</span>
             <div class="badge-name">${nameShown}</div>
             <div style="width:100%;margin-top:6px">
@@ -4858,7 +4865,7 @@ spclEl.innerHTML = SPECIAL_BADGES.map(sb => {
 
       const pct = isUnlocked ? 100 : Math.round((found / total) * 100);
       return `<div class="badge-wrap" style="min-width:110px">
-        <div class="badge-card ${isUnlocked ? 'unlocked' : 'badge-locked'}" style="padding:10px 7px 8px;${!isUnlocked ? 'filter:grayscale(60%)' : ''}">
+<div class="badge-card ${isUnlocked ? 'unlocked' : ''}" style="padding:10px 7px 8px;${!isUnlocked ? 'filter:grayscale(40%);opacity:0.75' : ''}">
           <span class="badge-emoji">${sb.emoji}</span>
           <div class="badge-name">${name}</div>
           ${!isUnlocked ? `
@@ -5243,11 +5250,12 @@ data.forEach((e, i) => {
     const prestigeIcon = (e.prestige > 0)
       ? ((window.getPrestigeConfig || (() => ({})))(e.prestige)?.icon || '') : '';
     const safeEntry = JSON.stringify(e).replace(/'/g,"&#39;");
-const titlePrefix = e.activeTitle ? `<span style="font-size:0.70rem;color:var(--text-muted);display:block;line-height:1.2">${e.activeTitle}</span>` : '';
+const titleBefore = (e.activeTitle && e.titlePos !== 'suffix') ? `<span style="font-size:0.70rem;color:var(--text-muted);display:block;line-height:1.2">${e.activeTitle}</span>` : '';
+    const titleAfter  = (e.activeTitle && e.titlePos === 'suffix')  ? ` <span style="font-size:0.70rem;color:var(--text-muted)">${e.activeTitle}</span>` : '';
     html += `<tr${isMe ? ' class="me"' : ''}>
       <td class="place">${medal || (i+1)}</td>
       <td class="prestige-icon-col">${prestigeIcon}</td>
-      <td>${titlePrefix}<strong>${e.name}</strong></td>
+      <td>${titleBefore}<strong>${e.name}</strong>${titleAfter}</td>
       <td style="font-size:0.8rem;color:var(--text-muted)">${e.module || '–'}</td>
       <td><strong>${(e.xp||0).toLocaleString('de-DE')}</strong></td>
       <td>${e.badges || 0}</td>
@@ -5493,7 +5501,7 @@ function openUserDetailLive(btn) {
     <div style="text-align:center;padding:6px 0 12px">
       ${picHtml}
       <div style="font-weight:800;font-size:1.05rem;color:var(--prestige-color);margin-top:7px">
-        ${e.activeTitle?`<span style="font-size:0.70rem;opacity:0.7">${e.activeTitle} </span>`:''}${e.name}
+${e.activeTitle && e.titlePos !== 'suffix' ? `<span style="font-size:0.70rem;opacity:0.7">${e.activeTitle} </span>` : ''}${e.name}${e.activeTitle && e.titlePos === 'suffix' ? ` <span style="font-size:0.70rem;opacity:0.7">${e.activeTitle}</span>` : ''}
       </div>
       <div style="font-size:0.73rem;color:var(--text-muted);margin-top:2px">${pc?.label||''}</div>
     </div>
@@ -6261,8 +6269,6 @@ async function loadUserMgmtList() {
 
 // Vitrine-Dropdowns mit Achievements befüllen
     _fillVitrineDropdowns();
-    // Archiv laden
-    loadArchivList();
   } catch(err) {
     wrap.innerHTML = `<p style="color:var(--error);font-size:0.84rem">❌ Fehler: ${err.message}</p>`;
   }
@@ -6304,6 +6310,16 @@ async function reactivateUser(name) {
     showToast(`✅ ${name} reaktiviert`);
     loadUserMgmtList();
   } catch(e) { showToast('⚠️ Fehler: ' + e.message); }
+}
+
+function toggleArchivSection() {
+  const sec = document.getElementById('archivSection');
+  const btn = document.getElementById('archivToggleBtn');
+  if (!sec) return;
+  const isHidden = sec.style.display === 'none';
+  sec.style.display = isHidden ? 'block' : 'none';
+  if (btn) btn.textContent = isHidden ? '📦 Archiv schließen' : '📦 Archiv';
+  if (isHidden) loadArchivList();
 }
 
 async function loadArchivList() {
