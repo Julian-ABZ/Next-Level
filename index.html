@@ -5255,7 +5255,7 @@ const titleBefore = (e.activeTitle && e.titlePos !== 'suffix') ? `<span style="f
     html += `<tr${isMe ? ' class="me"' : ''}>
       <td class="place">${medal || (i+1)}</td>
       <td class="prestige-icon-col">${prestigeIcon}</td>
-      <td>${titleBefore}<strong>${e.name}</strong>${titleAfter}</td>
+<td>${titleBefore}${isMe ? '👉 ' : ''}<strong>${e.name}</strong>${titleAfter}</td>
       <td style="font-size:0.8rem;color:var(--text-muted)">${e.module || '–'}</td>
       <td><strong>${(e.xp||0).toLocaleString('de-DE')}</strong></td>
       <td>${e.badges || 0}</td>
