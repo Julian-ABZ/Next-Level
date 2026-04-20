@@ -5056,7 +5056,7 @@ const secUnlocked    = state.unlockedAchievements.some(u => u.id === SECRET_ACHI
     </div>
 <div class="ach-card ach-secret-special ${cookieUnlocked ? 'unlocked' : 'locked'}">
       <div class="ach-icon-wrap" onclick="onCookieAchClick()" style="${cookieUnlocked ? '' : 'cursor:pointer'}">
-        ${cookieUnlocked ? '🍪' : '❓'}
+${cookieUnlocked ? '🍪' : '<span style="position:relative;display:inline-block">❓<span style="position:absolute;bottom:-4px;right:-6px;font-size:0.65rem">🍪</span></span>'}
       </div>
       <div class="ach-body">
         <div class="ach-name">${cookieUnlocked ? COOKIE_ACHIEVEMENT.name : '???'}</div>
@@ -6611,7 +6611,7 @@ function importSave() {
    ═══════════════════════════════════════════════════════════ */
 function onCookieAchClick() {
   if (state.unlockedAchievements.some(u => u.id === COOKIE_ACHIEVEMENT.id)) {
-    fireSmallConfetti(); return;
+    return;
   }
   state.cookieAchClicks = (state.cookieAchClicks || 0) + 1;
   if (state.cookieAchClicks >= 10) {
