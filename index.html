@@ -3342,8 +3342,9 @@ function processModalQueue() {
   if (_modalQueue.length === 0) { _modalBusy = false; return; }
   _modalBusy = true;
   const next = _modalQueue.shift();
-  if      (next.type === 'levelup')     _showLevelUpModalNow(next.ranks);
+if      (next.type === 'levelup')     _showLevelUpModalNow(next.ranks);
   else if (next.type === 'achievement') _showAchievementModalNow(next.ach);
+  else if (next.type === 'badge')       _showAchievementModalNow(next.badge);
 }
 
 function scheduleModals(gainedRanks, newAchs) {
@@ -4576,9 +4577,13 @@ function _unlockEasterBadge(id, fb) {
   if (eb.xp > 0) { state.xp += eb.xp; state.totalXP = (state.totalXP||0) + eb.xp; spawnXPFloat(eb.xp); }
   addLogbuchEntry({ type:'badge', icon:eb.emoji, typeLabel:'Easter-Egg-Abzeichen',
     title:eb.name, reward:eb.xp>0?`+${eb.xp} XP`:'Freigeschaltet', desc:eb.desc, ts });
-  if (fb) _showCodeFeedback(fb,'success',`${eb.emoji} Easter Egg: ${eb.name}!`);
+if (fb) _showCodeFeedback(fb,'success',`${eb.emoji} Easter Egg: ${eb.name}!`);
   const newAchs = checkAchievements(), gainedRanks = checkRankUp();
-  saveState(); render(); scheduleModals(gainedRanks, newAchs);
+  saveState(); render();
+  // Badge-Popup in die Warteschlange
+  _modalQueue.push({ type:'badge', badge:{ emoji:eb.emoji, name:eb.name, desc:eb.desc, xp:eb.xp } });
+  scheduleModals(gainedRanks, newAchs);
+  if (!_modalBusy) processModalQueue();
 }
 
 function _showCodeFeedback(fb, type, msg) {
@@ -5049,17 +5054,13 @@ const secUnlocked    = state.unlockedAchievements.some(u => u.id === SECRET_ACHI
       </div>
       <div class="ach-status">${secUnlocked ? '✅' : '🔒'}</div>
     </div>
-    <div class="ach-card ach-secret-special ${cookieUnlocked ? 'unlocked' : 'locked'}"
-         onclick="onCookieAchClick()"
-         style="cursor:pointer"
-         title="${cookieUnlocked ? '' : 'Klicke mich...'}">
-      <div class="ach-icon-wrap" style="position:relative">
-        ${cookieUnlocked ? '🍪' : '<span style="font-size:1.4rem">👁️</span><span style="position:absolute;bottom:-2px;right:-2px;font-size:0.75rem">🍪</span>'}
+<div class="ach-card ach-secret-special ${cookieUnlocked ? 'unlocked' : 'locked'}">
+      <div class="ach-icon-wrap" onclick="onCookieAchClick()" style="${cookieUnlocked ? '' : 'cursor:pointer'}">
+        ${cookieUnlocked ? '🍪' : '❓'}
       </div>
       <div class="ach-body">
         <div class="ach-name">${cookieUnlocked ? COOKIE_ACHIEVEMENT.name : '???'}</div>
         <div class="ach-desc">${cookieUnlocked ? COOKIE_ACHIEVEMENT.desc : 'Noch nicht entdeckt.'}</div>
-        ${!cookieUnlocked && cookieClicks > 0 ? `<div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px">${cookieClicks}/10</div>` : ''}
       </div>
       <div class="ach-status">${cookieUnlocked ? '✅' : '🔒'}</div>
     </div>`;
