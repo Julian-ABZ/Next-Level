@@ -5,22 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Next Level 🏛️</title>
 <!--
-  ╔══════════════════════════════════════════════════════════╗
-  ║  NEXT LEVEL v6.0                                         ║
-  ╠══════════════════════════════════════════════════════════╣
-  ║  NEU in v6.0:                                           ║
-  ║  • Anrede & Modul-Abfrage in Startmaske (Buttons)       ║
-  ║  • Intro: Gold-Design, Tastatursteuerung                ║
-  ║  • Logbuch-Tab (ohne Code-Spick-Schutz)                 ║
-  ║  • Modul-Challenges via Google Sheets CSV               ║
-  ║  • Office Map Container                                  ║
-  ║  • Modulstatistik in Bestenliste                        ║
-  ║  • Erweiterter Admin-User-Detail-View                   ║
-  ║  • Seltenheitsgrad für Abzeichen & Achievements         ║
-  ║  • Rang-Popups (auch Multi-Rang-Skip)                   ║
-  ║  • Hilfe-Button (?) im Footer                           ║
-  ╚══════════════════════════════════════════════════════════╝
--->
+  ╔══════════════════════════════════════════════════════╗
+  ║  NEXT LEVEL - WIllkommen im Maschinenraum            ║
+  ╚══════════════════════════════════════════════════════╝
+ -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;600;700;800&family=Rajdhani:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=DM+Sans:wght@400;600;700&family=Nunito:wght@400;600;700;800&family=Orbitron:wght@500;600;700;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
@@ -2640,7 +2628,7 @@ const CODES = [
   { hash: btoa('Adios'),               xp:100, msg:'👋 Abschlussbeurteilung erledigt!',   badge:{emoji:'👋', name:'Ich bin dann mal raus',    desc:'Abschlussbeurteilung erledigt.'               }, secret:false, adminOnly:false },
   { hash: btoa('IchGebeCodesNiemalsAnAndereWeiter'), xp:0, msg:'🤝 Ehrensache!',         badge:{emoji:'🤝', name:'Ehrensache!',              desc:'Gib deine Codes niemals weiter!'              }, secret:false, adminOnly:false },
   { hash: btoa('GUTESHERZ'),           xp:50,  msg:'💛 Pfand gespendet!',                 badge:{emoji:'💛', name:'Wohltäter/in',             desc:'Spende deinen Pfand.'                        }, secret:false, adminOnly:false },
-  { hash: btoa('Die5Ringe'),           xp:50,  msg:'🏅 Bürolympiade-Teilnahme!',          badge:{emoji:'🏅', name:'Olympionike/Olympionikin', desc:'Nimm an der Bürolympiade teil.'               }, secret:false, adminOnly:false },
+{ hash: btoa('Die5Ringe'),           xp:50,  msg:'🏅 Bürolympiade-Teilnahme!',          badge:{emoji:'🏅', name: state.gender === 'female' ? 'Olympionikin' : 'Olympionike', desc:'Nimm an der Bürolympiade teil.'               }, secret:false, adminOnly:false },
   // Geheime Codes:
   { hash: btoa('0PROBLEM'),            xp:50,  msg:"🎉 Let's get this party started!",    badge:{emoji:'🎉', name:"Let's get this party started", desc:'Finde den Code in der Begrüßungsmail.'   }, secret:true,  adminOnly:false },
   { hash: btoa('MJAMMJAM'),            xp:50,  msg:'🍰 Mjam Mjam!',                       badge:{emoji:'🍰', name:'Mjam Mjam!',               desc:'Kuchen / Süßigkeiten mitgebracht.'           }, secret:true,  adminOnly:false },
@@ -5070,8 +5058,9 @@ const cookieUnlocked = state.unlockedAchievements.some(u => u.id === COOKIE_ACHI
       <div class="ach-status">${secUnlocked ? '✅' : '🔒'}</div>
     </div>
 <div class="ach-card ach-secret-special ${cookieUnlocked ? 'unlocked' : 'locked'}">
-      <div class="ach-icon-wrap" onclick="onCookieAchClick()" style="${cookieUnlocked ? '' : 'cursor:pointer'}">
-        ${cookieIconHtml}
+      <div class="ach-icon-wrap" style="position:relative">
+        ${cookieUnlocked ? '🍪' : `❓<span onclick="onCookieAchClick()" title="Klicke mich..." style="position:absolute;bottom:0;right:0;font-size:0.8rem;line-height:1;cursor:pointer">🍪</span>`}
+      </div>
       <div class="ach-body">
         <div class="ach-name">${cookieUnlocked ? COOKIE_ACHIEVEMENT.name : '???'}</div>
         <div class="ach-desc">${cookieUnlocked ? COOKIE_ACHIEVEMENT.desc : 'Noch nicht entdeckt.'}</div>
