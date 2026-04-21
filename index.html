@@ -5058,7 +5058,7 @@ const secUnlocked    = state.unlockedAchievements.some(u => u.id === SECRET_ACHI
     </div>
 <div class="ach-card ach-secret-special ${cookieUnlocked ? 'unlocked' : 'locked'}">
       <div class="ach-icon-wrap" onclick="onCookieAchClick()" style="${cookieUnlocked ? '' : 'cursor:pointer'}">
-'<span style="position:relative;display:inline-block">❓<span style="position:absolute;bottom:-2px;right:-2px;font-size:0.65rem">🍪</span></span>'      </div>
+${cookieUnlocked ? `🍪` : `<span style="position:relative;display:inline-block">❓<span style="position:absolute;bottom:-2px;right:-2px;font-size:0.65rem">🍪</span></span>`}
       <div class="ach-body">
         <div class="ach-name">${cookieUnlocked ? COOKIE_ACHIEVEMENT.name : '???'}</div>
         <div class="ach-desc">${cookieUnlocked ? COOKIE_ACHIEVEMENT.desc : 'Noch nicht entdeckt.'}</div>
