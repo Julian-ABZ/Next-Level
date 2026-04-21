@@ -3178,29 +3178,20 @@ function redeemIntroCode() {
     });
   }
 
-  // Alle Achievements prüfen (Starter wird hier freigeschaltet)
-  ACHIEVEMENTS.forEach(ach => {
-    if (ach.id === 'eigenlob') return;
-    if (state.unlockedAchievements.some(u => u.id === ach.id)) return;
-    if (ach.check && ach.check(state)) {
-      const ts = Date.now();
-      state.unlockedAchievements.push({ id:ach.id, ts });
-      if (ach.xp > 0) {
-        state.xp      += ach.xp;
-        state.totalXP  = (state.totalXP || 0) + ach.xp;
-      }
-      // Streak Freeze Bonus
-      if (ach.bonus && ach.bonus.includes('Streak Freeze')) {
-        state.streakTotalFreezes = (state.streakTotalFreezes || 3) + 1;
-      }
-      addLogbuchEntry({
-        type:'achievement', icon:ach.emoji, typeLabel:'Achievement',
-        title:ach.name,
-        reward: ach.xp > 0 ? `+${ach.xp} XP` : (ach.bonus || ''),
-        desc: ach.desc, ts
-      });
-    }
-  });
+// Starter-Achievement direkt vergeben (Ehrensache zählt nicht als sichtbares Abzeichen,
+  // daher kann der normale check() es nicht auslösen)
+  const starterAch = ACHIEVEMENTS.find(a => a.id === 'starter');
+  if (starterAch && !state.unlockedAchievements.some(u => u.id === 'starter')) {
+    const ts = Date.now();
+    state.unlockedAchievements.push({ id:'starter', ts });
+    state.xp      += starterAch.xp;
+    state.totalXP  = (state.totalXP || 0) + starterAch.xp;
+    spawnXPFloat(starterAch.xp);
+    addLogbuchEntry({
+      type:'achievement', icon:starterAch.emoji, typeLabel:'Achievement',
+      title:starterAch.name, reward:`+${starterAch.xp} XP`, desc:starterAch.desc, ts
+    });
+  }
 
   saveState();
 
@@ -4351,9 +4342,6 @@ function processCode(found, input, fb) {
   state.totalXP  = (state.totalXP||0) + found.xp;
   spawnXPFloat(found.xp);
 
-if (found.badge) {
-    const badgeName = (found.badge.nameFemale && state.gender === 'female')
-      ? found.badge.nameFemale : found.badge.name;
 if (found.badge) {
     const badgeName = (found.badge.nameFemale && state.gender === 'female')
       ? found.badge.nameFemale : found.badge.name;
