@@ -5044,7 +5044,10 @@ const inShowcase = isUnlocked && (state.showcase || []).includes(ach.id);
 
   // Secret Achievement
 const secUnlocked    = state.unlockedAchievements.some(u => u.id === SECRET_ACHIEVEMENT.id);
-  const cookieUnlocked = state.unlockedAchievements.some(u => u.id === COOKIE_ACHIEVEMENT.id);
+const cookieUnlocked = state.unlockedAchievements.some(u => u.id === COOKIE_ACHIEVEMENT.id);
+  const cookieIconHtml = cookieUnlocked
+    ? '🍪'
+    : '❓<span style="position:absolute;bottom:0;right:0;font-size:0.55rem;line-height:1">🍪</span>';
   const cookieClicks   = state.cookieAchClicks || 0;
 
   html += `<div class="ach-separator">🔐 Geheime Achievements</div>
@@ -5058,7 +5061,7 @@ const secUnlocked    = state.unlockedAchievements.some(u => u.id === SECRET_ACHI
     </div>
 <div class="ach-card ach-secret-special ${cookieUnlocked ? 'unlocked' : 'locked'}">
       <div class="ach-icon-wrap" onclick="onCookieAchClick()" style="${cookieUnlocked ? '' : 'cursor:pointer'}">
-${cookieUnlocked ? `🍪` : `<span style="position:relative;display:inline-block">❓<span style="position:absolute;bottom:-2px;right:-2px;font-size:0.65rem">🍪</span></span>`}
+        ${cookieIconHtml}
       <div class="ach-body">
         <div class="ach-name">${cookieUnlocked ? COOKIE_ACHIEVEMENT.name : '???'}</div>
         <div class="ach-desc">${cookieUnlocked ? COOKIE_ACHIEVEMENT.desc : 'Noch nicht entdeckt.'}</div>
