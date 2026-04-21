@@ -1636,7 +1636,7 @@ window.firebaseCreateTestUser = async function(data) {
 </div>
 
 <!-- ACHIEVEMENT MODAL -->
-<div id="achievementModal" class="modal-overlay hidden" data-modal="achievement">
+<div id="achievementModal" class="modal-overlay hidden" data-modal="achievement" tabindex="-1">
   <div class="achievement-modal">
     <span class="ach-modal-icon" id="achModalIcon">⭐</span>
     <h3 id="achModalTitle">Achievement freigeschaltet!</h3>
@@ -3375,6 +3375,7 @@ function _showAchievementModalNow(ach) {
       ? `${ach.desc} (+${ach.xp.toLocaleString('de-DE')} XP)`
       : ach.desc;
   openModal('achievementModal');
+  setTimeout(() => document.getElementById('achievementModal')?.focus(), 50);
 }
 
 function closeAchievementModal() {
