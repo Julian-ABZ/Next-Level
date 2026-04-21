@@ -1270,7 +1270,7 @@ window.firebaseSubscribeLeaderboard = function(callback) {
   _db.ref('leaderboard').on('value', snap => {
     const entries = [];
     snap.forEach(child => { const v = child.val(); if (v && v.name) entries.push(v); });
-    entries.sort((a, b) => (b.xp || 0) - (a.xp || 0));
+entries.sort((a, b) => (b.totalXP || b.xp || 0) - (a.totalXP || a.xp || 0));
     callback(entries);
   }, err => console.warn('Firebase Listener Fehler:', err));
 };
@@ -1986,13 +1986,13 @@ window.firebaseCreateTestUser = async function(data) {
       <div class="settings-section-title">🏖️ Abwesenheiten (Urlaub, Fortbildungen…)</div>
       <p class="hint" style="margin-bottom:8px">Kein Streak-Verlust, aber die Aktivitätsleiste bewegt sich Richtung Cold.</p>
       <div style="display:flex;gap:7px;align-items:flex-end;flex-wrap:wrap">
-        <div style="flex:1;min-width:110px">
-          <label style="display:block;font-size:0.69rem;color:var(--text-muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:0.06em">Von</label>
-          <input type="date" class="field-input" id="absenceFrom" style="margin-bottom:0" />
+<div style="flex:1;min-width:110px;cursor:pointer" onclick="document.getElementById('absenceFrom').showPicker()">
+          <label style="display:block;font-size:0.69rem;color:var(--text-muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:0.06em;cursor:pointer">Von</label>
+          <input type="date" class="field-input" id="absenceFrom" style="margin-bottom:0;color-scheme:dark;cursor:pointer" />
         </div>
-        <div style="flex:1;min-width:110px">
-          <label style="display:block;font-size:0.69rem;color:var(--text-muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:0.06em">Bis</label>
-          <input type="date" class="field-input" id="absenceTo" style="margin-bottom:0" />
+        <div style="flex:1;min-width:110px;cursor:pointer" onclick="document.getElementById('absenceTo').showPicker()">
+          <label style="display:block;font-size:0.69rem;color:var(--text-muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:0.06em;cursor:pointer">Bis</label>
+          <input type="date" class="field-input" id="absenceTo" style="margin-bottom:0;color-scheme:dark;cursor:pointer" />
         </div>
         <button class="btn btn-ghost btn-sm" style="flex-shrink:0" onclick="addAbsence()">+ Hinzufügen</button>
       </div>
@@ -2030,9 +2030,9 @@ window.firebaseCreateTestUser = async function(data) {
   <div class="header-right">
     <div class="profile-pic-wrap"><div id="profilePicCircle">👤</div></div>
     <div class="header-user">
-      <div class="username-wrap">
-        <div class="username" id="headerName">–</div>
+<div class="username-wrap">
         <div class="header-title-pill" id="headerTitlePill" style="display:none"></div>
+        <div class="username" id="headerName">–</div>
       </div>
       <span class="rank-badge" id="headerRank">🌱 Praktikantin</span>
     </div>
@@ -2561,7 +2561,7 @@ window.firebaseCreateTestUser = async function(data) {
    0. KONFIGURATION & KONSTANTEN
    ═══════════════════════════════════════════════════════════ */
 const INTRO_CODE        = 'IchWerdeMeineCodesNiemalsWeitergeben';
-const MASTER_HASH       = 'R2VoZWltMTIzIQ==';        // btoa('Geheim123!')
+const MASTER_HASH       = 'R2VoZWltMTIzIQ==';       
 const DAILY_XP          = 75;
 const WEEKLY_XP         = 250;
 
@@ -3825,11 +3825,19 @@ function render() {
   _setEl('headerName', state.name || '–');
   _setEl('headerRank', `${rank.icon} ${rank.name}`);
 
-  const titleText = getActiveTitleText();
+const titleText = getActiveTitleText();
   const pill = document.getElementById('headerTitlePill');
   if (pill) {
-    if (titleText) { pill.style.display = ''; pill.textContent = titleText; }
-    else            { pill.style.display = 'none'; }
+    if (titleText) {
+      pill.style.display = '';
+      pill.textContent = titleText;
+      const ach = getAchById(state.activeTitle);
+      const pos = ach?.title?.position || 'suffix';
+      // Prefix: Pill vor Name (order:-1), Suffix: Pill nach Name (order:1)
+      pill.style.order = pos === 'prefix' ? '-1' : '1';
+    } else {
+      pill.style.display = 'none';
+    }
   }
 
 const plb = document.getElementById('prestigeLvlBadge');
@@ -4481,11 +4489,13 @@ saveState(); render(); renderBadges();
     });
   }
 
-  _showCodeFeedback(fb, 'success', `🎉 ${sb.emoji} „${name}" freigeschaltet!`);
+_showCodeFeedback(fb, 'success', `🎉 ${sb.emoji} „${name}" freigeschaltet!`);
   const newAchs     = checkAchievements();
   const gainedRanks = checkRankUp();
   saveState(); render();
+  _modalQueue.push({ type:'badge', badge:{ emoji:sb.emoji, name, desc:sb.desc, xp:sb.xp } });
   scheduleModals(gainedRanks, newAchs);
+  if (!_modalBusy) processModalQueue();
   if (input) input.value = '';
 }
 
@@ -4851,42 +4861,25 @@ spclEl.innerHTML = SPECIAL_BADGES.map(sb => {
       const total      = sb.codes.length;
       const name       = gender === 'female' ? (sb.nameFemale || sb.nameMale) : sb.nameMale;
       const isUnlocked = state.unlockedBadges.some(b => b.name === sb.nameMale || b.name === sb.nameFemale);
+      const rarityPill = isUnlocked ? buildRarityPill(name, 'badge') : '';
+      const pct        = isUnlocked ? 100 : Math.round((found / total) * 100);
 
-// Immer sichtbar — ab 0 Codes schon mit leerem Balken
-      if (found === 0 && !isUnlocked) {
-        const nameShown = gender === 'female' ? (sb.nameFemale || sb.nameMale) : sb.nameMale;
-        return `<div class="badge-wrap" style="min-width:110px">
-<div class="badge-card" style="padding:10px 7px 8px;filter:grayscale(85%);opacity:0.55">
-            <span class="badge-emoji">${sb.emoji}</span>
-            <div class="badge-name">${nameShown}</div>
-            <div style="width:100%;margin-top:6px">
-              <div style="font-size:0.62rem;color:var(--text-muted);margin-bottom:3px;text-align:center">0/${sb.codes.length} Codes</div>
-              <div style="height:5px;border-radius:50px;background:rgba(255,255,255,0.08);overflow:hidden">
-                <div class="badge-progress-fill" style="width:0%"></div>
-              </div>
-            </div>
-          </div>
-          <div class="badge-tooltip"><div class="badge-tooltip-name">${nameShown}</div><div class="badge-tooltip-desc">${sb.desc}</div></div>
-        </div>`;
-      }
-
-      const pct = isUnlocked ? 100 : Math.round((found / total) * 100);
-      return `<div class="badge-wrap" style="min-width:110px">
-<div class="badge-card ${isUnlocked ? 'unlocked' : ''}" style="padding:10px 7px 8px;${!isUnlocked ? 'filter:grayscale(40%);opacity:0.75' : ''}">
+      return `<div class="badge-wrap">
+        <div class="badge-card ${isUnlocked ? 'unlocked' : ''}${!isUnlocked ? ' badge-locked' : ''}" style="${!isUnlocked ? 'filter:grayscale(40%);opacity:0.75' : ''}">
           <span class="badge-emoji">${sb.emoji}</span>
           <div class="badge-name">${name}</div>
+          ${rarityPill}
           ${!isUnlocked ? `
             <div style="width:100%;margin-top:6px">
               <div style="font-size:0.62rem;color:var(--text-muted);margin-bottom:3px;text-align:center">${found}/${total} Codes</div>
               <div style="height:5px;border-radius:50px;background:rgba(255,255,255,0.08);overflow:hidden">
-                <div class="badge-progress-fill" style="width:${pct}%"></div>
+                <div style="height:100%;border-radius:50px;width:${pct}%;background:linear-gradient(90deg,#27ae60,#2ecc71);transition:width .8s ease"></div>
               </div>
             </div>` : ''}
         </div>
         <div class="badge-tooltip"><div class="badge-tooltip-name">${name}</div><div class="badge-tooltip-desc">${sb.desc}</div></div>
       </div>`;
     }).join('');
-  }
 
 document.querySelectorAll('.badge-section-title').forEach(title => {
     if (title.dataset.accordionReady) return;
@@ -5313,14 +5306,13 @@ function showModuleStatsLive(btn) {
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <p style="font-size:0.74rem;color:var(--text-muted);margin-top:8px">Archivierte und gelöschte Nutzer werden nicht gezählt. Mind. 3 aktive TN pro Modul erforderlich.</p>`;
 }
 
 function renderLiveLeaderboard() {
   const wrap = document.getElementById('lbTableWrap');
   if (!wrap) return;
   if (_lbLiveFilter === '__moduleranking__') return; // Modul-Ranking aktiv, nicht überschreiben
-  let data = _lbLiveData;
+let data = [..._lbLiveData].sort((a,b) => (b.totalXP||b.xp||0) - (a.totalXP||a.xp||0));
   if (_lbLiveFilter !== 'all') data = data.filter(e => e.module === _lbLiveFilter);
   if (data.length === 0) {
     wrap.innerHTML = '<p style="color:var(--text-muted);font-size:0.84rem">Keine Einträge vorhanden.</p>';
@@ -6042,7 +6034,8 @@ function renderAbsences() {
 
   // Gruppiere zusammenhängende Bereiche
   el.innerHTML = state.absences.map((a,i) => {
-    const label = a.from === a.to ? a.from : `${a.from} bis ${a.to}`;
+const fmt = d => { const [y,m,t] = d.split('-'); return `${t}.${m}.${y}`; };
+    const label = a.from === a.to ? fmt(a.from) : `${fmt(a.from)} – ${fmt(a.to)}`;
     return `<div class="absence-item">
       <span>${label}</span>
       <button class="absence-remove" onclick="removeAbsence(${i})" title="Entfernen">✕</button>
@@ -6106,11 +6099,15 @@ function updateTitleSelector() {
 function setActiveTitle(achId) {
   state.activeTitle = achId || null;
 
-  if (achId) {
-    // Eigenlob-Achievement freischalten
+if (achId) {
     const eigenlob = ACHIEVEMENTS.find(a => a.id === 'eigenlob');
     if (eigenlob && !state.unlockedAchievements.some(u => u.id === 'eigenlob')) {
       state.unlockedAchievements.push({ id:'eigenlob', ts:Date.now() });
+      saveState(); render();
+      _modalQueue.push({ type:'achievement', ach:eigenlob });
+      if (!_modalBusy) processModalQueue();
+      _updateTitlePreview();
+      return;
     }
   }
 
