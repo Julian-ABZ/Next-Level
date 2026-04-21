@@ -4354,13 +4354,18 @@ function processCode(found, input, fb) {
 if (found.badge) {
     const badgeName = (found.badge.nameFemale && state.gender === 'female')
       ? found.badge.nameFemale : found.badge.name;
-    if (!state.unlockedBadges.some(b => b.name === badgeName || b.name === found.badge.name || b.name === found.badge.nameFemale)) {
-    const ts = Date.now();
-    state.unlockedBadges.push({ emoji:found.badge.emoji, name:badgeName, desc:found.badge.desc, ts });
-    addLogbuchEntry({
-      type:'badge', icon:found.badge.emoji, typeLabel:'Abzeichen',
-      title:found.badge.name, reward:`+${found.xp} XP`, desc:found.badge.desc, ts
-    });
+if (found.badge) {
+    const badgeName = (found.badge.nameFemale && state.gender === 'female')
+      ? found.badge.nameFemale : found.badge.name;
+    const alreadyHas = state.unlockedBadges.some(b =>
+      b.name === found.badge.name || b.name === (found.badge.nameFemale || ''));
+    if (!alreadyHas) {
+      const ts = Date.now();
+      state.unlockedBadges.push({ emoji:found.badge.emoji, name:badgeName, desc:found.badge.desc, ts });
+      addLogbuchEntry({
+        type:'badge', icon:found.badge.emoji, typeLabel:'Abzeichen',
+        title:badgeName, reward:`+${found.xp} XP`, desc:found.badge.desc, ts
+      });
     }
   }
 
