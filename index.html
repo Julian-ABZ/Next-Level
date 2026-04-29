@@ -5112,15 +5112,23 @@ window._surveyAnswers = {};
 
 function _renderSurveyForm() {
   const wrap = document.getElementById('surveyFormWrap');
+  const thanks = document.getElementById('surveyThankYou');
   if (!wrap) return;
+  // Formular zurücksetzen (für "später" Wiederanzeige)
+  if (thanks) thanks.style.display = 'none';
+  wrap.style.display = '';
+  window._surveyAnswers = {};
+
   wrap.innerHTML = SURVEY_QUESTIONS.map((q, qi) => {
     if (q.type === 'radio') {
       const opts = q.options.map(o =>
         `<label style="display:flex;align-items:center;gap:9px;padding:7px 11px;background:rgba(255,255,255,0.04);
           border:1.5px solid rgba(120,138,172,0.2);border-radius:9px;cursor:pointer;font-size:0.84rem;
-          transition:border-color .2s" onclick="this.style.borderColor='var(--prestige-color)';
-          document.querySelectorAll('.sq-${qi}').forEach(l=>l.style.borderColor='rgba(120,138,172,0.2)');
-          this.style.borderColor='var(--prestige-color)';window._surveyAnswers['${q.id}']=this.querySelector('input').value">
+          transition:border-color .2s"
+          onclick="document.querySelectorAll('[data-sq=\\'${qi}\\']').forEach(l=>l.style.borderColor='rgba(120,138,172,0.2)');
+          this.style.borderColor='var(--prestige-color)';
+          window._surveyAnswers['${q.id}']=this.querySelector('input').value"
+          data-sq="${qi}">
           <input type="radio" name="sq${qi}" value="${o}" style="accent-color:var(--prestige-color)">
           ${o}
         </label>`
@@ -5141,7 +5149,11 @@ function _renderSurveyForm() {
     }
     return '';
   }).join('') +
-  `<button class="btn btn-gold btn-wide" onclick="_submitSurvey()" style="margin-top:8px">✅ Absenden</button>
+  `<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+     <button class="btn btn-gold btn-wide" onclick="_submitSurvey()">✅ Absenden</button>
+     <button class="btn btn-ghost btn-wide" onclick="_surveyLater()"
+       style="font-size:0.82rem;opacity:0.75">⏰ Ich nehme später teil</button>
+   </div>
    <p style="color:var(--text-muted);font-size:0.73rem;text-align:center;margin-top:8px">
      Deine Antworten werden direkt an Google Forms übermittelt.
    </p>`;
@@ -5154,13 +5166,15 @@ async function _submitSurvey() {
     showToast('⚠️ Bitte alle Fragen beantworten!'); return;
   }
 
+  // Absenden-Button deaktivieren (Doppelklick verhindern)
+  const submitBtn = document.querySelector('#surveyFormWrap .btn-gold');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '⏳ Sende…'; }
+
   // An Google Forms senden (no-cors)
   const body = new URLSearchParams();
   SURVEY_QUESTIONS.forEach(q => {
     body.append(q.id, window._surveyAnswers[q.id] || '');
   });
-  // Spielername als verstecktes Feld (falls ein entry dafür vorhanden)
-  body.append('entry.name', state.name || '–');
 
   try {
     await fetch(SURVEY_SUBMIT_URL, {
@@ -5169,22 +5183,29 @@ async function _submitSurvey() {
       body: body.toString()
     });
   } catch(e) {
-    // no-cors gibt immer einen "opaque" response — kein echter Fehler
+    // no-cors gibt immer eine "opaque" response — kein echter Fehler
   }
 
-  // Als erledigt markieren
+  // Als erledigt markieren & Danke-Seite zeigen
   state.surveyDone = true;
   saveState();
 
-  // Danke-Seite zeigen
   const wrap = document.getElementById('surveyFormWrap');
   const thanks = document.getElementById('surveyThankYou');
   if (wrap)   wrap.style.display = 'none';
   if (thanks) thanks.style.display = '';
 }
 
+function _surveyLater() {
+  // Modal schließen, aber NICHT als erledigt markieren → erscheint beim nächsten XP wieder
+  closeModal('surveyModal');
+  showToast('⏰ Bis später! Die Umfrage erscheint beim nächsten XP erneut.');
+}
+
 function closeSurveyModal() {
-  if (!state.surveyDone) { showToast('⚠️ Bitte nimm zuerst an der Umfrage teil!'); return; }
+  if (!state.surveyDone) {
+    _surveyLater(); return;
+  }
   closeModal('surveyModal');
 }
 
@@ -5192,9 +5213,12 @@ function checkSurveyTrigger() {
   if (state.surveyDone) return;
   if ((state.totalXP || state.xp || 0) >= 1000) {
     _renderSurveyForm();
-    openModal('surveyModal');
-    // Fokus auf Modal setzen
-    setTimeout(() => document.getElementById('surveyModal')?.focus(), 50);
+    // Nur anzeigen wenn nicht schon offen
+    const modal = document.getElementById('surveyModal');
+    if (modal && modal.classList.contains('hidden')) {
+      openModal('surveyModal');
+      setTimeout(() => modal.focus(), 50);
+    }
   }
 }
 
