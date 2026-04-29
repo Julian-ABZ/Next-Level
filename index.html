@@ -125,8 +125,29 @@ body {
 /* Zeiger ohne Tooltip-Textfeld */
 #actPointer { position:absolute;width:22px;height:22px;background:#fff;border-radius:50%;border:3px solid rgba(0,0,0,0.2);box-shadow:0 2px 8px rgba(0,0,0,0.4);transform:translate(-50%,-50%);top:50%;transition:left 0.6s cubic-bezier(0.34,1.56,0.64,1);z-index:1; }
 
-/* Admin-Stern */
-#adminStar { display:none;font-size:2.2rem;line-height:1;cursor:default;transition:color .3s,filter .3s;filter:drop-shadow(0 0 6px currentColor);flex-shrink:0; }
+#adminModePill {
+  display: none;
+  padding: 4px 12px;
+  border-radius: 50px;
+  font-size: 0.70rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  cursor: default;
+  white-space: nowrap;
+  font-family: var(--font-main);
+  flex-shrink: 0;
+  border: 1.5px solid transparent;
+  transition: color .3s, border-color .3s, box-shadow .3s;
+  text-transform: uppercase;
+}
+@keyframes adminGoldPulse {
+  0%,100% { box-shadow: 0 0 7px rgba(245,158,11,0.45), 0 0 14px rgba(245,158,11,0.2); }
+  50%      { box-shadow: 0 0 16px rgba(245,158,11,0.75), 0 0 28px rgba(245,158,11,0.4); }
+}
+@keyframes adminBluePulse {
+  0%,100% { box-shadow: 0 0 7px rgba(91,141,217,0.45), 0 0 14px rgba(91,141,217,0.2); }
+  50%      { box-shadow: 0 0 16px rgba(91,141,217,0.75), 0 0 28px rgba(91,141,217,0.4); }
+}
 
 /* ══════════════════════════════════════════════════════════
    4. ONBOARDING (Name-Eingabe) — erweitert mit Anrede & Modul
@@ -630,7 +651,7 @@ html.light-mode header { background:rgba(240,246,255,0.96); }
 .badge-card.unlocked:hover { box-shadow:0 6px 18px var(--prestige-glow); }
 .badge-card.badge-locked { opacity:.27;filter:grayscale(100%); }
 .badge-card.admin-reset-hover:hover { border-color:var(--error)!important;box-shadow:0 0 14px rgba(224,85,85,0.4)!important; }
-.badge-emoji { font-size:1.95rem;display:block;margin-bottom:6px;line-height:1.2;flex-shrink:0; }
+.badge-emoji { font-size:1.65rem;display:block;margin-bottom:5px;line-height:1.2;flex-shrink:0; }
 .badge-name { font-size:0.66rem;font-weight:700;color:var(--text-muted);line-height:1.3;min-height:2.6em;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-align:center;font-family:var(--font-main); }
 .badge-card.unlocked .badge-name { color:var(--prestige-color); }
 .badge-secret-icon { position:relative;display:inline-block;font-size:1.95rem;line-height:1.2;margin-bottom:6px;flex-shrink:0; }
@@ -1764,6 +1785,40 @@ window.firebaseCreateTestUser = async function(data) {
 </div>
 
 <!-- FORTSCHRITT INFO MODAL -->
+<!-- VITRINE-INFO-MODAL -->
+<div id="vitrineInfoModal" class="modal-overlay hidden" data-modal="vitrineinfo" tabindex="-1">
+  <div class="rich-info-modal">
+    <div class="rinfo-header">
+      <span class="rinfo-icon">⭐</span>
+      <h3>Meine Vitrine</h3>
+    </div>
+    <div class="rinfo-grid">
+      <div class="rinfo-item">
+        <div class="rinfo-item-icon gold">🎪</div>
+        <div class="rinfo-item-text">
+          <div class="rinfo-item-title">Deine Bühne</div>
+          <div class="rinfo-item-desc">Stelle deine Lieblings-Achievements zur Schau — wähle bis zu <strong>3</strong> gleichzeitig aus.</div>
+        </div>
+      </div>
+      <div class="rinfo-item">
+        <div class="rinfo-item-icon green">⭐</div>
+        <div class="rinfo-item-text">
+          <div class="rinfo-item-title">So geht's</div>
+          <div class="rinfo-item-desc">Klicke im Tab „Achievements" auf den <strong>⭐-Stern</strong> beim jeweiligen Achievement, um es hinzuzufügen oder zu entfernen.</div>
+        </div>
+      </div>
+      <div class="rinfo-item">
+        <div class="rinfo-item-icon blue">👁️</div>
+        <div class="rinfo-item-text">
+          <div class="rinfo-item-title">Sichtbar für alle</div>
+          <div class="rinfo-item-desc">Andere Nutzer können deine Vitrine über das <strong>👁️-Symbol</strong> in der Bestenliste anschauen.</div>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-gold btn-wide" onclick="closeModal('vitrineInfoModal')">⭐ Verstanden!</button>
+  </div>
+</div>
+
 <div id="fortschrittInfoModal" class="modal-overlay hidden" data-modal="fortschrittinfo">
   <div class="rich-info-modal">
     <div class="rinfo-header">
@@ -2061,7 +2116,7 @@ window.firebaseCreateTestUser = async function(data) {
   </div>
   <div class="header-right">
 <div class="profile-pic-wrap" style="display:inline-flex;align-items:center;gap:6px">
-      <span id="adminStar" title="Admin-Modus aktiviert">⭐</span>
+<span id="adminModePill" title="Admin-Modus aktiviert">Admin-Modus</span>
       <div id="profilePicCircle">👤</div>
     </div>
     <div class="header-user">
@@ -2461,8 +2516,9 @@ window.firebaseCreateTestUser = async function(data) {
 <button class="lb-filter-btn" onclick="showModuleStatsLive(this)" id="lbModulRankingBtn" style="border-color:var(--gold,#c9a84c);color:var(--gold,#c9a84c)">📈 Modul-Ranking</button>
     <button class="lb-filter-btn" onclick="showEwigkeitsRankingLive(this)" id="lbEwigkeitsBtn" style="border-color:#7a8aac;color:#7a8aac" title="Alle je aktiven Nutzer – inkl. Archiv">🌐 Ewigkeits-Ranking</button>
   </div>
-  <div id="lbTableWrap">
+<div id="lbTableWrap">
 </div>
+</div><!-- Ende Tab Leaderboard -->
 
 <!-- TAB: Timeline (nur Super-Admin) -->
   <div class="tab-panel" id="tab-timeline">
@@ -5006,43 +5062,7 @@ function getGenderedAchName(name, gender) {
 /* ═══════════════════════════════════════════════════════════
    NEU: ACHIEVEMENT-VITRINE TOGGLE & RENDER
    ═══════════════════════════════════════════════════════════ */
-function openVitrineInfo() {
-  const ex = document.getElementById('_vitrineInfoOv');
-  if (ex) ex.remove();
-  const ov = document.createElement('div');
-  ov.id = '_vitrineInfoOv';
-  ov.style.cssText = 'position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)';
-  ov.innerHTML = `
-    <div style="background:var(--navy-light);border:1px solid var(--prestige-color);border-radius:18px;padding:28px 32px;max-width:400px;width:92%;box-shadow:var(--shadow);animation:popIn .3s ease both;font-family:var(--font-main)">
-      <h3 style="font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--prestige-color);margin-bottom:16px;display:flex;align-items:center;gap:8px">⭐ Meine Vitrine</h3>
-      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
-        <div style="display:flex;gap:12px;align-items:flex-start">
-          <span style="font-size:1.4rem;flex-shrink:0">🎪</span>
-          <div>
-            <div style="font-weight:800;font-size:0.86rem;color:var(--cream);margin-bottom:3px">Deine Bühne</div>
-            <div style="font-size:0.81rem;color:var(--text-muted);line-height:1.5">Stelle deine Lieblings-Achievements zur Schau – wähle bis zu <strong style="color:var(--prestige-color)">3</strong> aus.</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:12px;align-items:flex-start">
-          <span style="font-size:1.4rem;flex-shrink:0">⭐</span>
-          <div>
-            <div style="font-weight:800;font-size:0.86rem;color:var(--cream);margin-bottom:3px">So geht's</div>
-            <div style="font-size:0.81rem;color:var(--text-muted);line-height:1.5">Klicke beim Achievement auf den <strong style="color:var(--prestige-color)">⭐-Stern</strong>, um es hinzuzufügen oder zu entfernen.</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:12px;align-items:flex-start">
-          <span style="font-size:1.4rem;flex-shrink:0">👁️</span>
-          <div>
-            <div style="font-weight:800;font-size:0.86rem;color:var(--cream);margin-bottom:3px">Sichtbar für alle</div>
-            <div style="font-size:0.81rem;color:var(--text-muted);line-height:1.5">Andere können deine Vitrine über das <strong style="color:var(--prestige-color)">👁️-Symbol</strong> in der Bestenliste anschauen.</div>
-          </div>
-        </div>
-      </div>
-      <button class="btn btn-gold btn-wide" onclick="document.getElementById('_vitrineInfoOv').remove()">✓ Verstanden!</button>
-    </div>`;
-  ov.addEventListener('click', ev => { if (ev.target === ov) ov.remove(); });
-  document.body.appendChild(ov);
-}
+function openVitrineInfo() { openModal('vitrineInfoModal'); }
 
 function toggleShowcase(achId) {
   if (!state.showcase) state.showcase = [];
@@ -5402,6 +5422,16 @@ function _getTitleRarityColor(achId) {
 }
 
 /** Ewigkeits-Ranking: Alle User (aktiv + archiviert) */
+function scrollToMeInEwigkeit() {
+  const meRow = document.getElementById('ewigkeitMeRow');
+  if (!meRow) { showToast('⚠️ Du bist nicht im Ewigkeits-Ranking.'); return; }
+  meRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  meRow.style.outline = '2px solid var(--prestige-color)';
+  meRow.style.transition = 'outline 1s';
+  setTimeout(() => { meRow.style.outline = '2px solid transparent'; }, 1800);
+  setTimeout(() => { meRow.style.outline = ''; meRow.style.transition = ''; }, 2500);
+}
+
 async function showEwigkeitsRankingLive(btn) {
   const wrap = document.getElementById('lbTableWrap');
   if (!wrap) return;
@@ -5423,11 +5453,14 @@ async function showEwigkeitsRankingLive(btn) {
   }
 
   const isSuperAdmin = state._isSuperAdmin;
-  let html = `<div style="font-size:0.72rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">
-    🌐 Ewigkeits-Ranking — Alle Teilnehmer inkl. Archiv (${users.length})
+let html = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
+    <span style="font-size:0.72rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em">
+      🌐 Ewigkeits-Ranking — Alle Teilnehmer inkl. Archiv (${users.length})
+    </span>
+    <button onclick="scrollToMeInEwigkeit()" style="padding:3px 11px;border-radius:50px;border:1.5px solid var(--prestige-color);background:rgba(120,138,172,0.10);color:var(--prestige-color);font-size:0.70rem;font-weight:800;cursor:pointer;white-space:nowrap;font-family:var(--font-main)">👉 Finde mich!</button>
   </div>
-  <table class="lb-table"><thead><tr>
-    <th>#</th><th></th><th>Name</th><th>Modul</th><th>XP</th><th>Abzeichen</th>${isSuperAdmin ? '<th>👁️</th>' : ''}
+  <table class="lb-table">
+    <th>#</th><th></th><th>Name</th><th>Modul</th><th>XP</th><th>Abzeichen</th><th>👁️</th>
   </tr></thead><tbody>`;
 
   users.forEach((e, i) => {
@@ -5440,14 +5473,15 @@ async function showEwigkeitsRankingLive(btn) {
     const titleColor = _getTitleRarityColor(e.activeTitleId);
     const titleBefore = (e.activeTitle && e.titlePos !== 'suffix') ? `<span style="font-size:0.70rem;color:${titleColor};display:block;line-height:1.2">${e.activeTitle}</span>` : '';
     const titleAfter  = (e.activeTitle && e.titlePos === 'suffix')  ? ` <span style="font-size:0.70rem;color:${titleColor}">${e.activeTitle}</span>` : '';
-    html += `<tr${isMe ? ' class="me"' : ''}>
+    const meId = isMe ? ' id="ewigkeitMeRow"' : '';
+    html += `<tr${isMe ? ' class="me"' : ''}${meId}>
       <td class="place">${medal || (i+1)}</td>
       <td class="prestige-icon-col">${prestI}</td>
       <td>${titleBefore}${isMe ? '👉 ' : ''}<strong>${e.name}</strong>${archivedBadge}${titleAfter}</td>
       <td style="font-size:0.8rem;color:var(--text-muted)">${e.module || '–'}</td>
       <td><strong>${(e.totalXP||e.xp||0).toLocaleString('de-DE')}</strong></td>
       <td>${e.badges || 0}</td>
-      ${isSuperAdmin ? `<td><button class="lb-eye-btn" onclick="openUserDetailLive(this)" data-entry='${safeEntry}'>👁️</button></td>` : ''}
+      <td><button class="lb-eye-btn" onclick="openUserDetailLive(this)" data-entry='${safeEntry}'>👁️</button></td>
     </tr>`;
   });
   html += '</tbody></table>';
@@ -5528,7 +5562,7 @@ let data = [..._lbLiveData].sort((a,b) => (b.totalXP||b.xp||0) - (a.totalXP||a.x
   }
 const isSuperAdmin = state._isSuperAdmin;
 let html = `<table class="lb-table"><thead><tr>
-    <th>#</th><th></th><th>Name</th><th>Modul</th><th>XP</th><th>Abzeichen</th>${isSuperAdmin ? '<th>👁️</th>' : ''}
+    <th>#</th><th></th><th>Name</th><th>Modul</th><th>XP</th><th>Abzeichen</th><th>👁️</th>
   </tr></thead><tbody>`;
 data.forEach((e, i) => {
     if (!e || !e.name) return;                           // Null-Schutz
@@ -5547,7 +5581,7 @@ const titleBefore = (e.activeTitle && e.titlePos !== 'suffix') ? `<span style="f
       <td style="font-size:0.8rem;color:var(--text-muted)">${e.module || '–'}</td>
 <td><strong>${(e.totalXP||e.xp||0).toLocaleString('de-DE')}</strong></td>
       <td>${e.badges || 0}</td>
-      ${isSuperAdmin ? `<td><button class="lb-eye-btn" onclick="openUserDetailLive(this)" data-entry='${safeEntry}'>👁️</button></td>` : ''}
+<td><button class="lb-eye-btn" onclick="openUserDetailLive(this)" data-entry='${safeEntry}'>👁️</button></td>
     </tr>`;
   });
   html += '</tbody></table>';
@@ -6442,12 +6476,13 @@ function openSuperAdminPanel() {
   state._isSuperAdmin = true;            // ← Erweiterter Admin
   const tlBtn = document.getElementById('timelineTabBtn');
   if (tlBtn) tlBtn.style.display = '';
-// Stern auf Diamant-Blau (gesamter Stern, nicht nur Glühen)
-  const star = document.getElementById('adminStar');
+// Admin-Pille auf Diamant-Blau setzen
+  const star = document.getElementById('adminModePill');
   if (star) {
     star.style.display = 'inline';
     star.style.color = '#5b8dd9';
-    star.style.filter = 'drop-shadow(0 0 8px #5b8dd9) drop-shadow(0 0 16px #3b6abf)';
+    star.style.borderColor = '#5b8dd9';
+    star.style.animation = 'adminBluePulse 2s infinite';
     star.title = 'Admin+-Modus aktiviert';
   }
 }
@@ -6474,9 +6509,15 @@ function openAdminPanel() {
 document.getElementById('adminPanel')?.classList.add('visible');
   state._isAdmin = true;   // ← Admin-Modus aktivieren
   renderAdminCodeList();
-  // Admin-Stern (gold) anzeigen
-  const adminStarEl = document.getElementById('adminStar');
-  if (adminStarEl) { adminStarEl.style.display = 'inline'; adminStarEl.style.color = '#f59e0b'; adminStarEl.title = 'Admin-Modus aktiviert'; }
+// Admin-Pille (gold) anzeigen
+  const adminStarEl = document.getElementById('adminModePill');
+  if (adminStarEl) {
+    adminStarEl.style.display = 'inline';
+    adminStarEl.style.color = '#f59e0b';
+    adminStarEl.style.borderColor = '#f59e0b';
+    adminStarEl.style.animation = 'adminGoldPulse 2s infinite';
+    adminStarEl.title = 'Admin-Modus aktiviert';
+  }
   showToast('🛡️ Admin-Konsole aktiviert!');
 
   // Admin-Badge-Hint
@@ -6508,9 +6549,9 @@ state._isAdmin = false;   // ← Admin-Modus deaktivieren
   state._isSuperAdmin = false; // ← Super-Admin zurücksetzen
   document.getElementById('adminPanel')?.classList.remove('visible');
   document.getElementById('adminBadgeHint').style.display = 'none';
-  // Admin-Stern verstecken
-  const starEl = document.getElementById('adminStar');
-  if (starEl) starEl.style.display = 'none';
+// Admin-Pille verstecken
+  const starEl = document.getElementById('adminModePill');
+  if (starEl) { starEl.style.display = 'none'; starEl.style.animation = ''; }
   // Bestenliste sofort ohne Admin-Augen neu rendern
   if (_lbAllEntries.length > 0) {
     _renderLeaderboardTable(_lbAllEntries, false);
