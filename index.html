@@ -1778,25 +1778,37 @@ window.firebaseCreateTestUser = async function(data) {
 
 <!-- FORTSCHRITT INFO MODAL -->
 <!-- UMFRAGE-MODAL (erscheint ab 1000 XP, Pflicht) -->
-<div id="surveyModal" class="modal-overlay hidden" data-modal="survey" tabindex="-1" style="z-index:10500" onclick="if(event.target===this&&!state.surveyDone){showToast('⚠️ Bitte zuerst die Umfrage ausfüllen!');event.stopPropagation()}">
+<div id="surveyModal" class="modal-overlay hidden" data-modal="survey" tabindex="-1" style="z-index:10500" onclick="event.stopPropagation()">
   <div style="background:linear-gradient(160deg,var(--navy-light),var(--navy-mid));border:2px solid var(--prestige-color);
-    border-radius:22px;padding:30px 34px;max-width:560px;width:96%;box-shadow:0 0 60px var(--prestige-glow),var(--shadow);
-    animation:popIn .5s cubic-bezier(0.175,0.885,0.32,1.275) both;font-family:var(--font-main);max-height:92vh;overflow-y:auto;margin:16px auto">
-    <div style="font-family:'Playfair Display',serif;font-size:1.3rem;color:var(--prestige-color);margin-bottom:6px">
-      🎉 Herzlichen Glückwunsch!
+    border-radius:22px;padding:24px 28px;max-width:680px;width:96%;box-shadow:0 0 60px var(--prestige-glow),var(--shadow);
+    animation:popIn .5s cubic-bezier(0.175,0.885,0.32,1.275) both;font-family:var(--font-main);max-height:96vh;
+    overflow-y:auto;margin:12px auto;display:flex;flex-direction:column;gap:14px">
+
+    <div style="font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--prestige-color)">
+      🎉 1.000 XP erreicht — Herzlichen Glückwunsch!
     </div>
-    <p style="color:var(--text-muted);font-size:0.86rem;margin-bottom:16px;line-height:1.6">
-      Du hast <strong style="color:var(--prestige-color)">1.000 XP</strong> erreicht — ein toller Meilenstein! 🚀<br>
-      Bitte nimm dir kurz Zeit für unsere kleine Umfrage. Du kannst danach direkt weiterspielen.
+    <p style="color:var(--text-muted);font-size:0.85rem;line-height:1.6;margin:0">
+      Du hast einen tollen Meilenstein erreicht! 🚀 Bitte nimm dir kurz Zeit für unsere kleine Umfrage —
+      sie hilft uns, Next Level für euch noch besser zu machen.
     </p>
-    <div id="surveyFormWrap">
-      <!-- Fragen werden per JS gerendert -->
+
+    <!-- Google Forms iframe -->
+    <div style="border-radius:14px;overflow:hidden;border:1px solid var(--card-border)">
+      <iframe
+        src="https://docs.google.com/forms/d/e/1FAIpQLSdp3TAloXEeidYxKCcJz-rjVrzkogIrzT78BF2t4T_7VWOqXg/viewform?embedded=true"
+        width="100%" height="520" frameborder="0" marginheight="0" marginwidth="0"
+        style="display:block;background:#fff">
+        Wird geladen…
+      </iframe>
     </div>
-    <div id="surveyThankYou" style="display:none;text-align:center;padding:20px 0">
-      <div style="font-size:2.5rem;margin-bottom:10px">✅</div>
-      <div style="font-weight:800;font-size:1.1rem;color:var(--prestige-color);margin-bottom:6px">Danke für dein Feedback!</div>
-      <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:20px">Deine Antworten wurden übermittelt.</p>
-      <button class="btn btn-gold btn-wide" onclick="closeSurveyModal()">🚀 Weiter geht's!</button>
+
+    <p style="color:var(--text-muted);font-size:0.75rem;text-align:center;margin:0">
+      Scrolle im Formular nach unten und klicke auf „Senden". Danach auf „Ich habe teilgenommen".
+    </p>
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn btn-gold btn-wide" onclick="_surveyConfirmDone()">✅ Ich habe teilgenommen</button>
+      <button class="btn btn-ghost btn-wide" onclick="_surveyLater()" style="font-size:0.82rem;opacity:0.75">⏰ Ich nehme später teil</button>
     </div>
   </div>
 </div>
@@ -5094,126 +5106,29 @@ function openVitrineInfo() { openModal('vitrineInfoModal'); }
 /* ═══════════════════════════════════════════════════════════
    UMFRAGE (1000 XP Meilenstein)
    ═══════════════════════════════════════════════════════════ */
-const SURVEY_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdp3TAloXEeidYxKCcJz-rjVrzkogIrzT78BF2t4T_7VWOqXg/viewform';
-const SURVEY_SUBMIT_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdp3TAloXEeidYxKCcJz-rjVrzkogIrzT78BF2t4T_7VWOqXg/formResponse';
-
-// Fragen: { id: Google-entry-ID, label: Anzeige, type: 'text'|'radio'|'textarea', options: [...] }
-// entry-IDs aus dem Google-Form-URL entnehmen (Inspect Element → name="entry.XXXXXXX")
-const SURVEY_QUESTIONS = [
-  { id: 'entry.779418467', label: 'Wie gefällt dir Next Level bisher?', type: 'radio',
-    options: ['⭐ Sehr gut', '🙂 Gut', '😐 Geht so', '😕 Nicht so gut'] },
-  { id: 'entry.2', label: 'Was motiviert dich am meisten?', type: 'radio',
-    options: ['🏅 Abzeichen sammeln', '📊 Bestenliste', '🎯 Challenges', '⚡ XP & Ränge', '👥 Mit anderen vergleichen'] },
-  { id: 'entry.3', label: 'Was würdest du dir noch wünschen?', type: 'textarea' },
-];
-
-// Antworten speichern
-window._surveyAnswers = {};
-
-function _renderSurveyForm() {
-  const wrap = document.getElementById('surveyFormWrap');
-  const thanks = document.getElementById('surveyThankYou');
-  if (!wrap) return;
-  // Formular zurücksetzen (für "später" Wiederanzeige)
-  if (thanks) thanks.style.display = 'none';
-  wrap.style.display = '';
-  window._surveyAnswers = {};
-
-  wrap.innerHTML = SURVEY_QUESTIONS.map((q, qi) => {
-    if (q.type === 'radio') {
-      const opts = q.options.map(o =>
-        `<label style="display:flex;align-items:center;gap:9px;padding:7px 11px;background:rgba(255,255,255,0.04);
-          border:1.5px solid rgba(120,138,172,0.2);border-radius:9px;cursor:pointer;font-size:0.84rem;
-          transition:border-color .2s"
-          onclick="document.querySelectorAll('[data-sq=\\'${qi}\\']').forEach(l=>l.style.borderColor='rgba(120,138,172,0.2)');
-          this.style.borderColor='var(--prestige-color)';
-          window._surveyAnswers['${q.id}']=this.querySelector('input').value"
-          data-sq="${qi}">
-          <input type="radio" name="sq${qi}" value="${o}" style="accent-color:var(--prestige-color)">
-          ${o}
-        </label>`
-      ).join('');
-      return `<div style="margin-bottom:16px">
-        <div style="font-weight:800;font-size:0.86rem;color:var(--cream);margin-bottom:8px">${qi+1}. ${q.label}</div>
-        <div style="display:flex;flex-direction:column;gap:5px">${opts}</div>
-      </div>`;
-    }
-    if (q.type === 'textarea') {
-      return `<div style="margin-bottom:16px">
-        <div style="font-weight:800;font-size:0.86rem;color:var(--cream);margin-bottom:8px">${qi+1}. ${q.label}</div>
-        <textarea oninput="window._surveyAnswers['${q.id}']=this.value"
-          style="width:100%;min-height:80px;padding:10px 12px;background:var(--navy);border:1.5px solid var(--slate);
-          border-radius:10px;color:var(--cream);font-family:var(--font-main);font-size:0.84rem;resize:vertical;outline:none"
-          placeholder="Dein Feedback…"></textarea>
-      </div>`;
-    }
-    return '';
-  }).join('') +
-  `<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
-     <button class="btn btn-gold btn-wide" onclick="_submitSurvey()">✅ Absenden</button>
-     <button class="btn btn-ghost btn-wide" onclick="_surveyLater()"
-       style="font-size:0.82rem;opacity:0.75">⏰ Ich nehme später teil</button>
-   </div>
-   <p style="color:var(--text-muted);font-size:0.73rem;text-align:center;margin-top:8px">
-     Deine Antworten werden direkt an Google Forms übermittelt.
-   </p>`;
-}
-
-async function _submitSurvey() {
-  // Alle Antworten prüfen
-  const missing = SURVEY_QUESTIONS.filter(q => !window._surveyAnswers[q.id]?.trim());
-  if (missing.length) {
-    showToast('⚠️ Bitte alle Fragen beantworten!'); return;
-  }
-
-  // Absenden-Button deaktivieren (Doppelklick verhindern)
-  const submitBtn = document.querySelector('#surveyFormWrap .btn-gold');
-  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '⏳ Sende…'; }
-
-  // An Google Forms senden (no-cors)
-  const body = new URLSearchParams();
-  SURVEY_QUESTIONS.forEach(q => {
-    body.append(q.id, window._surveyAnswers[q.id] || '');
-  });
-
-  try {
-    await fetch(SURVEY_SUBMIT_URL, {
-      method: 'POST', mode: 'no-cors',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body.toString()
-    });
-  } catch(e) {
-    // no-cors gibt immer eine "opaque" response — kein echter Fehler
-  }
-
-  // Als erledigt markieren & Danke-Seite zeigen
+function _surveyConfirmDone() {
+  // Nutzer bestätigt, dass er teilgenommen hat
   state.surveyDone = true;
   saveState();
-
-  const wrap = document.getElementById('surveyFormWrap');
-  const thanks = document.getElementById('surveyThankYou');
-  if (wrap)   wrap.style.display = 'none';
-  if (thanks) thanks.style.display = '';
+  closeModal('surveyModal');
+  showToast('✅ Danke für deine Teilnahme!');
 }
 
 function _surveyLater() {
-  // Modal schließen, aber NICHT als erledigt markieren → erscheint beim nächsten XP wieder
+  // Schließen ohne als erledigt zu markieren → erscheint beim nächsten XP wieder
   closeModal('surveyModal');
   showToast('⏰ Bis später! Die Umfrage erscheint beim nächsten XP erneut.');
 }
 
 function closeSurveyModal() {
-  if (!state.surveyDone) {
-    _surveyLater(); return;
-  }
+  // Nur aufrufbar nach bestätigter Teilnahme (Button im Modal)
+  if (!state.surveyDone) { _surveyLater(); return; }
   closeModal('surveyModal');
 }
 
 function checkSurveyTrigger() {
   if (state.surveyDone) return;
   if ((state.totalXP || state.xp || 0) >= 1000) {
-    _renderSurveyForm();
-    // Nur anzeigen wenn nicht schon offen
     const modal = document.getElementById('surveyModal');
     if (modal && modal.classList.contains('hidden')) {
       openModal('surveyModal');
