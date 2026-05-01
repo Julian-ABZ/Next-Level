@@ -3084,6 +3084,7 @@ showcase:[],               // NEU: bis zu 3 Achievement-IDs für Vitrine
    8. SAVE / LOAD
    ═══════════════════════════════════════════════════════════ */
 function saveState() {
+  if (state.name) state._lastKnownName = state.name;
   localStorage.setItem('nlv6', JSON.stringify(state));
   // Score live in Firebase aktualisieren
   if (typeof window.firebaseUploadScore === 'function') {
@@ -3092,6 +3093,7 @@ function saveState() {
 }
 
 function loadState() {
+  // _lastKnownName für Timeline-Fallback
   // Kompatibilität: auch alten Key nlv5 prüfen
   const raw = localStorage.getItem('nlv6') || localStorage.getItem('nlv5');
   if (!raw) return;
@@ -3235,7 +3237,8 @@ function startOnboarding() {
   }
 
   // State befüllen
-  state.name   = name;
+state.name   = name;
+  state._lastKnownName = name;
   state.gender = gender;
   state.module = module;
   state.firstOpenTs = state.firstOpenTs || Date.now();
@@ -3850,24 +3853,25 @@ function applyTheme(t) {
  */
 function addLogbuchEntry(entry) {
   if (!state.logbuch) state.logbuch = [];
-  // Global Timeline loggen — mit Retry wenn Firebase noch nicht bereit
-  if (state.name) {
+  // Global Timeline loggen
+  const tlName = state.name || state._lastKnownName || '';
+  if (tlName) {
     const xpNum = parseInt((entry.reward||'').replace(/\D/g,'')) || entry.xp || 0;
-    const tlEntry = {
-      name:  state.name,
-      xp:    xpNum,
-      title: entry.title     || '',
-      label: entry.typeLabel || '',
-      type:  entry.type      || 'misc',
+    const tlEntry = { name: tlName, xp: xpNum,
+      title: entry.title || '', label: entry.typeLabel || '', type: entry.type || 'misc' };
+    const doLog = () => {
+      if (typeof window.firebaseLogTimeline === 'function') {
+        window.firebaseLogTimeline(tlEntry)
+          .then(() => console.log('[Timeline] ✅ Geloggt:', tlEntry))
+          .catch(e => console.error('[Timeline] ❌ Fehler:', e));
+      } else {
+        console.warn('[Timeline] firebaseLogTimeline nicht verfügbar');
+      }
     };
-    if (typeof window.firebaseLogTimeline === 'function') {
-      window.firebaseLogTimeline(tlEntry);
-    } else {
-      // Retry nach 3 Sekunden (Firebase noch nicht initialisiert)
-      setTimeout(() => {
-        if (typeof window.firebaseLogTimeline === 'function') window.firebaseLogTimeline(tlEntry);
-      }, 3000);
-    }
+    if (typeof window.firebaseLogTimeline === 'function') doLog();
+    else setTimeout(doLog, 2000);
+  } else {
+    console.warn('[Timeline] Kein Name — Eintrag nicht geloggt. Entry:', entry.typeLabel, entry.title);
   }
   // Neueste Einträge zuerst
   state.logbuch.unshift({
@@ -7270,10 +7274,14 @@ function _renderUserMgmtTable() {
 
   const users = _umUsersCache;
   const key = _umSortKey, dir = _umSortDir;
+const strFields = ['name', 'module', 'rank'];
   const sorted = [...users].sort((a,b) => {
     let va = a[key], vb = b[key];
-    if (key === 'name') { va=(va||'').toLowerCase(); vb=(vb||'').toLowerCase(); }
-    else { va=Number(va)||0; vb=Number(vb)||0; }
+    if (strFields.includes(key)) {
+      va = (va||'').toLowerCase(); vb = (vb||'').toLowerCase();
+    } else {
+      va = Number(va)||0; vb = Number(vb)||0;
+    }
     return va < vb ? -dir : va > vb ? dir : 0;
   });
 
