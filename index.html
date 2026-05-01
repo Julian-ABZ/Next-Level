@@ -2619,54 +2619,54 @@ window.firebaseCreateTestUser = async function(data) {
 
   <!-- TAB: Timeline (nur Super-Admin) -->
 <div class="tab-panel" id="tab-timeline">
-    <div class="tile-title"><span class="icon">📡</span> Globale Timeline</div>
-
-    <!-- Schnellfilter -->
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
-      <button class="btn btn-ghost btn-sm" id="tlf-today"    onclick="tlSetFilter('today')"   >📅 Heute</button>
-      <button class="btn btn-ghost btn-sm" id="tlf-yesterday" onclick="tlSetFilter('yesterday')">⏮ Gestern</button>
-      <button class="btn btn-ghost btn-sm" id="tlf-week"     onclick="tlSetFilter('week')"    >📆 Diese Woche</button>
-      <button class="btn btn-ghost btn-sm" id="tlf-all"      onclick="tlSetFilter('all')"     >🌐 Alle</button>
+    <!-- Überschrift + Aktualisieren -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="tile-title" style="margin-bottom:0"><span class="icon">📡</span> Globale Timeline</div>
       <button class="btn btn-ghost btn-sm" onclick="renderTimeline()">🔄 Aktualisieren</button>
     </div>
 
-    <!-- Bereichsfilter von/bis -->
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;
-      padding:8px 12px;background:rgba(255,255,255,0.03);border-radius:9px;border:1px solid var(--card-border)">
-      <span style="font-size:0.78rem;color:var(--text-muted);font-weight:700">🗓 Von/Bis:</span>
-      <div onclick="document.getElementById('tlFrom').showPicker()" style="cursor:pointer;display:flex;align-items:center;gap:5px;
-        background:var(--navy);border:1px solid var(--slate);border-radius:7px;padding:4px 8px">
-        <span style="color:#fff;font-size:0.80rem">📅</span>
-        <input type="date" id="tlFrom" onclick="event.stopPropagation()" style="background:transparent;border:none;
-          color:var(--cream);font-size:0.80rem;font-family:var(--font-main);outline:none;cursor:pointer;color-scheme:dark">
+    <!-- Filter-Container -->
+    <div id="tlFilterBox" style="padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:9px;
+      border:1px solid var(--card-border);margin-bottom:12px;transition:border-color .2s,box-shadow .2s">
+
+      <!-- Schnellfilter -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        <button class="btn btn-ghost btn-sm" id="tlf-today"     onclick="tlSetFilter('today')"    >Heute</button>
+        <button class="btn btn-ghost btn-sm" id="tlf-yesterday" onclick="tlSetFilter('yesterday')" >Gestern</button>
+        <button class="btn btn-ghost btn-sm" id="tlf-week"      onclick="tlSetFilter('week')"     >Diese Woche</button>
+        <button class="btn btn-ghost btn-sm" id="tlf-all"       onclick="tlSetFilter('all')"      >Alle</button>
       </div>
-      <span style="color:var(--text-muted);font-size:0.78rem">bis</span>
-<div class="date-pill" onclick="document.getElementById('tlFrom').showPicker()">
-        <input type="date" id="tlFrom" oninput="updateDatePill(this)" style="color-scheme:dark">
-        <span class="date-pill-label" id="tlFrom-lbl">📅 Klick</span>
+
+      <!-- Von/Bis -->
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:0.78rem;color:var(--text-muted);font-weight:700">Von/Bis:</span>
+        <div class="date-pill" onclick="document.getElementById('tlFrom').showPicker()">
+          <input type="date" id="tlFrom" oninput="updateDatePill(this)" style="color-scheme:dark">
+          <span class="date-pill-label" id="tlFrom-lbl">📅 Klick</span>
+        </div>
+        <span style="color:var(--text-muted);font-size:0.78rem">bis</span>
+        <div class="date-pill" onclick="document.getElementById('tlTo').showPicker()">
+          <input type="date" id="tlTo" oninput="updateDatePill(this)" style="color-scheme:dark">
+          <span class="date-pill-label" id="tlTo-lbl">📅 Klick</span>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="tlSetFilter('custom')" style="font-size:0.78rem">🔍 Filtern</button>
+        <button class="btn btn-ghost btn-sm" onclick="tlSetFilter('all')" style="font-size:0.78rem">✕</button>
       </div>
-      <span style="color:var(--text-muted);font-size:0.78rem">bis</span>
-      <div class="date-pill" onclick="document.getElementById('tlTo').showPicker()">
-        <input type="date" id="tlTo" oninput="updateDatePill(this)" style="color-scheme:dark">
-        <span class="date-pill-label" id="tlTo-lbl">📅 Klick</span>
-      </div>
-      <button class="btn btn-ghost btn-sm" onclick="tlSetFilter('custom')" style="font-size:0.78rem">🔍 Filtern</button>
-      <button class="btn btn-ghost btn-sm" onclick="tlSetFilter('all')" style="font-size:0.78rem">✕</button>
     </div>
 
-    <!-- Löschen alter Einträge -->
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;
+    <div id="timelineList"></div>
+
+    <!-- Löschen ans Ende -->
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:18px;
       padding:8px 12px;background:rgba(239,68,68,0.05);border-radius:9px;border:1px solid rgba(239,68,68,0.2)">
       <span style="font-size:0.78rem;color:#ef4444;font-weight:700">🗑 Einträge löschen bis:</span>
-<div class="date-pill" onclick="document.getElementById('tlDeleteUntil').showPicker()">
+      <div class="date-pill" onclick="document.getElementById('tlDeleteUntil').showPicker()">
         <input type="date" id="tlDeleteUntil" oninput="updateDatePill(this)" style="color-scheme:dark">
         <span class="date-pill-label" id="tlDeleteUntil-lbl">📅 Klick</span>
       </div>
       <button class="btn btn-danger btn-sm" onclick="tlDeleteOld()" style="font-size:0.78rem">🗑 Löschen</button>
-      <span style="font-size:0.73rem;color:var(--text-muted)">Alle Einträge an diesem Datum und älter werden gelöscht.</span>
+      <span style="font-size:0.73rem;color:var(--text-muted)">Alle Einträge an diesem Datum und älter.</span>
     </div>
-
-    <div id="timelineList"></div>
   </div>
 
   <!-- TAB: Benutzerverwaltung (nur Admin) -->
@@ -5279,7 +5279,7 @@ function _renderSurveyNative() {
     const req = `<span style="color:#ef4444">*</span>`;
     const mainLabel = `<div style="font-weight:800;font-size:0.85rem;color:var(--cream);margin-bottom:8px">${_qNum}. ${q.label} ${req}</div>`;
 
-    // Stern-Bewertung
+// Stern-Bewertung (keine Zahlen, Label erscheint beim Klick)
     if (q.type === 'stars') {
       const stars = Array.from({length:q.max},(_,i)=>i+1).map(n =>
         `<span data-star="${q.id}" data-val="${n}" onclick="_setStar('${q.id}',${n})"
@@ -5287,8 +5287,8 @@ function _renderSurveyNative() {
           title="${q.starLabels?.[n-1]||''}">⭐</span>`
       ).join('');
       return `<div style="margin-bottom:8px">${mainLabel}
-        <div style="display:flex;gap:4px;margin-bottom:4px">${stars}</div>
-        <div id="starlabel_${q.id}" style="font-size:0.78rem;color:var(--prestige-color);min-height:18px"></div>
+        <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center">${stars}</div>
+        <div id="starlabel_${q.id}" style="font-size:0.82rem;color:var(--prestige-color);font-weight:700;min-height:20px"></div>
       </div>`;
     }
 
@@ -7152,20 +7152,52 @@ function openSuperAdminPanel() {
 let _tlAllItems   = [];
 let _tlFilterMode = 'all';   // 'today','yesterday','week','custom','all'
 
-// Hilfsfunktionen Datumsgrenzen
-function _tlDayStart(date) { const d=new Date(date); d.setHours(0,0,0,0); return d.getTime(); }
-function _tlDayEnd(date)   { const d=new Date(date); d.setHours(23,59,59,999); return d.getTime(); }
+// ── Timezone-sichere Datumsgrenzen (MEZ/MESZ) ───────────
+function _tlLocalMidnight(date) {
+  // Gibt Mitternacht des gegebenen Datums in lokaler Zeit als Timestamp zurück
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+function _tlLocalDayEnd(date) {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d.getTime();
+}
+function _tlDayStart(date) { return _tlLocalMidnight(date); }
+function _tlDayEnd(date)   { return _tlLocalDayEnd(date); }
 function _tlToday()        { return new Date(); }
 function _tlYesterday()    { const d=new Date(); d.setDate(d.getDate()-1); return d; }
-function _tlWeekStart()    { const d=new Date(); d.setDate(d.getDate()-d.getDay()+1); d.setHours(0,0,0,0); return d.getTime(); }
+function _tlWeekStart() {
+  const d = new Date();
+  // Montag als Wochenstart
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1 - day);
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
 
 function tlSetFilter(mode) {
   _tlFilterMode = mode;
+  const isFiltered = mode !== 'all';
   // Schnellfilter-Buttons hervorheben
   ['today','yesterday','week','all'].forEach(m => {
     const b = document.getElementById('tlf-'+m);
-    if (b) b.style.opacity = m === mode ? '1' : '0.55';
+    if (!b) return;
+    b.style.opacity      = m === mode ? '1' : '0.55';
+    b.style.fontWeight   = m === mode ? '800' : '';
+    b.style.background   = m === mode ? 'rgba(120,138,172,0.25)' : '';
+    b.style.borderColor  = m === mode ? 'var(--prestige-color)' : '';
+    b.style.color        = m === mode ? 'var(--prestige-color)' : '';
   });
+  // Filter-Box deutlich hervorheben wenn aktiv
+  const box = document.getElementById('tlFilterBox');
+  if (box) {
+    box.style.borderColor = isFiltered ? 'var(--prestige-color)' : 'var(--card-border)';
+    box.style.boxShadow   = isFiltered ? '0 0 0 2px rgba(120,138,172,0.35)' : '';
+    box.style.background  = isFiltered ? 'rgba(120,138,172,0.08)' : 'rgba(255,255,255,0.03)';
+  }
   tlRenderFiltered();
 }
 
@@ -7234,12 +7266,13 @@ function tlRenderFiltered() {
   const weekS     = _tlWeekStart();
   const monthS    = _tlDayStart(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
 
+// Gruppen mit lückenloser, überschneidungsfreier Logik
   const groups = [
-    { id:'g-today',    label:'📅 Heute',         test: i => i.ts >= todayS && i.ts <= todayE,    open: true  },
-    { id:'g-yesterday',label:'⏮ Gestern',        test: i => i.ts >= yesterdayS && i.ts <= yesterdayE, open: false },
-    { id:'g-week',     label:'📆 Letzte Woche',  test: i => i.ts >= weekS && i.ts < yesterdayS,  open: false },
-    { id:'g-month',    label:'🗓 Letzter Monat', test: i => i.ts >= monthS && i.ts < weekS,       open: false },
-    { id:'g-older',    label:'📦 Älter',         test: i => i.ts < monthS,                        open: false },
+    { id:'g-today',    label:'Heute',         test: i => i.ts >= todayS,                         open: true  },
+    { id:'g-yesterday',label:'Gestern',        test: i => i.ts >= yesterdayS && i.ts < todayS,    open: false },
+    { id:'g-week',     label:'Letzte Woche',  test: i => i.ts >= weekS && i.ts < yesterdayS,      open: false },
+    { id:'g-month',    label:'Letzter Monat', test: i => i.ts >= monthS && i.ts < weekS,           open: false },
+    { id:'g-older',    label:'Älter',         test: i => i.ts < monthS,                            open: false },
   ];
 
   const makeRow = it => {
@@ -7249,13 +7282,17 @@ function tlRenderFiltered() {
       : '';
     const detail = [it.label, it.title].filter(Boolean).join(' · ');
     const timeStr = _tlFilterMode === 'all' ? fmtFull(it.ts) : fmt(it.ts);
+    const safeEntry = JSON.stringify({name:it.name||'',xp:it.xp||0,module:it.module||''}).replace(/'/g,"&#39;");
     return `<div style="display:grid;grid-template-columns:${_tlFilterMode==='all'?'120px':'52px'} 18px 95px 1fr auto;
       gap:6px;align-items:center;padding:4px 10px;
       background:rgba(255,255,255,0.03);border-radius:7px;font-size:0.79rem;
       border-left:2px solid rgba(120,138,172,0.15)">
       <span style="color:var(--text-muted);font-size:0.72rem;white-space:nowrap">${timeStr}</span>
       <span>${icon}</span>
-      <span style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${it.name||'?'}</span>
+      <span onclick="tlOpenUserDetail('${(it.name||'').replace(/'/g,"\\'")}')"
+        style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+        cursor:pointer;color:var(--prestige-color);text-decoration:underline dotted"
+        title="Nutzerprofil anzeigen">${it.name||'?'}</span>
       <span style="color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${detail}</span>
       ${xpStr}
     </div>`;
@@ -7285,6 +7322,21 @@ function tlRenderFiltered() {
   });
 
   el.innerHTML = html;
+}
+
+async function tlOpenUserDetail(name) {
+  if (!name) return;
+  // Nutzer aus Cache oder Firebase laden
+  let entry = (_umUsersCache||[]).find(u => u.name === name);
+  if (!entry && typeof window.firebaseGetAllUsers === 'function') {
+    const all = await window.firebaseGetAllUsers();
+    entry = all.find(u => u.name === name);
+  }
+  if (!entry) { showToast('⚠️ Nutzerdaten nicht gefunden.'); return; }
+  // Fake-Button mit data-entry um openUserDetailLive zu nutzen
+  const fake = document.createElement('button');
+  fake.dataset.entry = JSON.stringify(entry).replace(/&#39;/g,"'");
+  openUserDetailLive(fake);
 }
 
 function tlToggleGroup(id) {
@@ -7536,10 +7588,12 @@ const strFields = ['name', 'module', 'rank'];
       <td style="color:var(--text-muted)">${_fmtDate(e.firstLogin)}</td>
       <td style="color:var(--text-muted)">${_fmtDate(e.updated)}</td>
       <td style="display:flex;gap:4px">
-        <button class="btn btn-sm" style="padding:3px 7px;font-size:0.70rem;background:rgba(245,158,11,0.15);border:1.5px solid var(--warning);color:var(--warning)"
-            onclick="setInactiveUser('${safeName}')">📦</button>
+<button class="btn btn-sm" style="padding:3px 7px;font-size:0.70rem;background:rgba(245,158,11,0.15);border:1.5px solid var(--warning);color:var(--warning)"
+            onclick="setInactiveUser('${safeName}')" title="Archivieren">📦</button>
+        <button class="btn btn-sm" style="padding:3px 7px;font-size:0.70rem;background:rgba(59,130,246,0.12);border:1.5px solid rgba(59,130,246,0.6);color:#3b82f6"
+            onclick="exportUserBackup('${safeName}')" title="Backup-Code exportieren & kopieren">💾</button>
         <button class="btn btn-danger btn-sm" style="padding:3px 8px;font-size:0.72rem"
-            onclick="deleteFirebaseUser('${safeName}')">🗑️</button>
+            onclick="deleteFirebaseUser('${safeName}')" title="Löschen">🗑️</button>
       </td>
     </tr>`;
   });
@@ -7556,6 +7610,30 @@ function _fillVitrineDropdowns() {
     if (!el) return;
     el.innerHTML = `<option value="">— leer —</option>` + opts;
   });
+}
+
+async function exportUserBackup(name) {
+  // Nutzerdaten aus Firebase laden
+  let entry = (_umUsersCache||[]).find(u => u.name === name);
+  if (!entry && typeof window.firebaseGetAllUsers === 'function') {
+    const all = await window.firebaseGetAllUsers();
+    entry = all.find(u => u.name === name);
+  }
+  if (!entry) { showToast('⚠️ Nutzerdaten nicht gefunden.'); return; }
+  try {
+    const code = btoa(unescape(encodeURIComponent(JSON.stringify(entry))));
+    await navigator.clipboard.writeText(code);
+    showToast(`✅ Backup von „${name}" in Zwischenablage kopiert!`);
+    // Auch im Export-Feld anzeigen (falls sichtbar)
+    const exportEl = document.getElementById('exportCode');
+    if (exportEl) exportEl.value = code;
+  } catch(e) {
+    // Fallback: im Export-Feld anzeigen
+    const code = btoa(unescape(encodeURIComponent(JSON.stringify(entry))));
+    const exportEl = document.getElementById('exportCode');
+    if (exportEl) { exportEl.value = code; showToast(`💾 Backup von „${name}" im Backup-Feld sichtbar.`); }
+    else showToast('❌ Clipboard nicht verfügbar.');
+  }
 }
 
 async function deleteFirebaseUser(name) {
