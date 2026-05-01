@@ -2641,11 +2641,14 @@ window.firebaseCreateTestUser = async function(data) {
           color:var(--cream);font-size:0.80rem;font-family:var(--font-main);outline:none;cursor:pointer;color-scheme:dark">
       </div>
       <span style="color:var(--text-muted);font-size:0.78rem">bis</span>
-      <div onclick="document.getElementById('tlTo').showPicker()" style="cursor:pointer;display:flex;align-items:center;gap:5px;
-        background:var(--navy);border:1px solid var(--slate);border-radius:7px;padding:4px 8px">
-        <span style="color:#fff;font-size:0.80rem">📅</span>
-        <input type="date" id="tlTo" onclick="event.stopPropagation()" style="background:transparent;border:none;
-          color:var(--cream);font-size:0.80rem;font-family:var(--font-main);outline:none;cursor:pointer;color-scheme:dark">
+<div class="date-pill" onclick="document.getElementById('tlFrom').showPicker()">
+        <input type="date" id="tlFrom" oninput="updateDatePill(this)" style="color-scheme:dark">
+        <span class="date-pill-label" id="tlFrom-lbl">📅 Klick</span>
+      </div>
+      <span style="color:var(--text-muted);font-size:0.78rem">bis</span>
+      <div class="date-pill" onclick="document.getElementById('tlTo').showPicker()">
+        <input type="date" id="tlTo" oninput="updateDatePill(this)" style="color-scheme:dark">
+        <span class="date-pill-label" id="tlTo-lbl">📅 Klick</span>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="tlSetFilter('custom')" style="font-size:0.78rem">🔍 Filtern</button>
       <button class="btn btn-ghost btn-sm" onclick="tlSetFilter('all')" style="font-size:0.78rem">✕</button>
@@ -2655,11 +2658,9 @@ window.firebaseCreateTestUser = async function(data) {
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;
       padding:8px 12px;background:rgba(239,68,68,0.05);border-radius:9px;border:1px solid rgba(239,68,68,0.2)">
       <span style="font-size:0.78rem;color:#ef4444;font-weight:700">🗑 Einträge löschen bis:</span>
-      <div onclick="document.getElementById('tlDeleteUntil').showPicker()" style="cursor:pointer;display:flex;align-items:center;gap:5px;
-        background:var(--navy);border:1px solid var(--slate);border-radius:7px;padding:4px 8px">
-        <span style="color:#fff;font-size:0.80rem">📅</span>
-        <input type="date" id="tlDeleteUntil" onclick="event.stopPropagation()" style="background:transparent;border:none;
-          color:var(--cream);font-size:0.80rem;font-family:var(--font-main);outline:none;cursor:pointer;color-scheme:dark">
+<div class="date-pill" onclick="document.getElementById('tlDeleteUntil').showPicker()">
+        <input type="date" id="tlDeleteUntil" oninput="updateDatePill(this)" style="color-scheme:dark">
+        <span class="date-pill-label" id="tlDeleteUntil-lbl">📅 Klick</span>
       </div>
       <button class="btn btn-danger btn-sm" onclick="tlDeleteOld()" style="font-size:0.78rem">🗑 Löschen</button>
       <span style="font-size:0.73rem;color:var(--text-muted)">Alle Einträge an diesem Datum und älter werden gelöscht.</span>
