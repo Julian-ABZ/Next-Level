@@ -1399,15 +1399,17 @@ window.firebaseTestTimelineWrite = async function() {
 /** Timeline: Letzte N Ereignisse laden */
 window.firebaseGetTimeline = async function(limit = 300) {
   try {
-    // Ohne orderByChild — kein Index nötig, Sortierung clientseitig
-    const snap = await _db.ref('timeline').once('value');
-    const items = [];
-    snap.forEach(child => { const v = child.val(); if (v && v.ts) items.push(v); });
+    const url = 'https://next-level-abz-default-rtdb.europe-west1.firebasedatabase.app/timeline.json';
+    const resp = await fetch(url);
+    if (!resp.ok) { console.error('[Timeline] HTTP-Fehler:', resp.status); return []; }
+    const data = await resp.json();
+    if (!data) { console.log('[Timeline] Keine Daten in Firebase'); return []; }
+    const items = Object.values(data).filter(v => v && v.ts);
     items.sort((a, b) => (b.ts || 0) - (a.ts || 0));
-    console.log('[Timeline] Einträge geladen:', items.length);
+    console.log('[Timeline] Einträge via REST geladen:', items.length);
     return items.slice(0, limit);
   } catch(e) {
-    console.error('[Timeline] Ladefehler:', e.message);
+    console.error('[Timeline] REST-Fehler:', e.message);
     return [];
   }
 };
@@ -2597,7 +2599,6 @@ window.firebaseCreateTestUser = async function(data) {
   <!-- TAB: Timeline (nur Super-Admin) -->
   <div class="tab-panel" id="tab-timeline">
     <div class="tile-title"><span class="icon">📡</span> Globale Timeline</div>
-    <p style="color:var(--text-muted);font-size:0.84rem;margin-bottom:12px">Alle XP-Ereignisse aller Nutzer*innen in Echtzeit.</p>
 <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
       <button class="btn btn-ghost btn-sm" onclick="renderTimeline()">🔄 Aktualisieren</button>
       <button class="btn btn-ghost btn-sm" onclick="(async()=>{const r=await window.firebaseTestTimelineWrite?.();showToast(r==='OK'?'✅ Schreibzugriff OK!':'❌ '+r);})()" style="border-color:var(--warning);color:var(--warning)">🔧 Schreibzugriff testen</button>
