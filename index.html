@@ -2151,13 +2151,19 @@ window.firebaseCreateTestUser = async function(data) {
       <div class="settings-section-title">🏖️ Abwesenheiten (Urlaub, Fortbildungen…)</div>
       <p class="hint" style="margin-bottom:8px">Kein Streak-Verlust, aber die Aktivitätsleiste bewegt sich Richtung Cold.</p>
       <div style="display:flex;gap:7px;align-items:flex-end;flex-wrap:wrap">
-<div style="flex:1;min-width:110px;cursor:pointer" onclick="document.getElementById('absenceFrom').showPicker()">
-          <label style="display:block;font-size:0.69rem;color:var(--text-muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:0.06em;cursor:pointer">Von</label>
-          <input type="date" class="field-input" id="absenceFrom" style="margin-bottom:0;color-scheme:dark;cursor:pointer" />
+<div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:0.69rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">Von</label>
+          <div class="date-pill" onclick="document.getElementById('absenceFrom').showPicker()">
+            <input type="date" id="absenceFrom" oninput="updateDatePill(this)" style="color-scheme:dark">
+            <span class="date-pill-label" id="absenceFrom-lbl">📅 Klick</span>
+          </div>
         </div>
-        <div style="flex:1;min-width:110px;cursor:pointer" onclick="document.getElementById('absenceTo').showPicker()">
-          <label style="display:block;font-size:0.69rem;color:var(--text-muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:0.06em;cursor:pointer">Bis</label>
-          <input type="date" class="field-input" id="absenceTo" style="margin-bottom:0;color-scheme:dark;cursor:pointer" />
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:0.69rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">Bis</label>
+          <div class="date-pill" onclick="document.getElementById('absenceTo').showPicker()">
+            <input type="date" id="absenceTo" oninput="updateDatePill(this)" style="color-scheme:dark">
+            <span class="date-pill-label" id="absenceTo-lbl">📅 Klick</span>
+          </div>
         </div>
         <button class="btn btn-ghost btn-sm" style="flex-shrink:0" onclick="addAbsence()">+ Hinzufügen</button>
       </div>
@@ -5877,18 +5883,14 @@ async function renderUmfrageResults() {
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;
       padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid var(--card-border)">
 <span style="font-size:0.78rem;color:var(--text-muted);font-weight:700">📅 Zeitraum:</span>
-      <div onclick="document.getElementById('umfrageFrom').showPicker()" style="cursor:pointer;display:flex;align-items:center;gap:5px;
-        background:var(--navy);border:1px solid var(--slate);border-radius:7px;padding:4px 8px">
-        <span style="font-size:0.80rem;color:#fff">📅</span>
-        <input type="date" id="umfrageFrom" onclick="event.stopPropagation()" style="background:transparent;border:none;
-          color:var(--cream);font-size:0.80rem;font-family:var(--font-main);outline:none;cursor:pointer;color-scheme:dark">
+<div class="date-pill" onclick="document.getElementById('umfrageFrom').showPicker()">
+        <input type="date" id="umfrageFrom" oninput="updateDatePill(this)" style="color-scheme:dark">
+        <span class="date-pill-label" id="umfrageFrom-lbl">📅 Klick</span>
       </div>
       <span style="color:var(--text-muted);font-size:0.78rem">bis</span>
-      <div onclick="document.getElementById('umfrageTo').showPicker()" style="cursor:pointer;display:flex;align-items:center;gap:5px;
-        background:var(--navy);border:1px solid var(--slate);border-radius:7px;padding:4px 8px">
-        <span style="font-size:0.80rem;color:#fff">📅</span>
-        <input type="date" id="umfrageTo" onclick="event.stopPropagation()" style="background:transparent;border:none;
-          color:var(--cream);font-size:0.80rem;font-family:var(--font-main);outline:none;cursor:pointer;color-scheme:dark">
+      <div class="date-pill" onclick="document.getElementById('umfrageTo').showPicker()">
+        <input type="date" id="umfrageTo" oninput="updateDatePill(this)" style="color-scheme:dark">
+        <span class="date-pill-label" id="umfrageTo-lbl">📅 Klick</span>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="_applyUmfrageFilter()" style="font-size:0.78rem">🔍 Filtern</button>
       <button class="btn btn-ghost btn-sm" onclick="_clearUmfrageFilter()" style="font-size:0.78rem">✕ Zurücksetzen</button>
