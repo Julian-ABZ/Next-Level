@@ -2637,8 +2637,9 @@ window.firebaseCreateTestUser = async function(data) {
         <button class="btn btn-ghost btn-sm" id="tlf-lastweek"  onclick="tlSetFilter('lastweek')" >Letzte Woche</button>
         <button class="btn btn-ghost btn-sm" id="tlf-thismonth" onclick="tlSetFilter('thismonth')">Dieser Monat</button>
         <button class="btn btn-ghost btn-sm" id="tlf-lastmonth" onclick="tlSetFilter('lastmonth')">Letzter Monat</button>
-        <button class="btn btn-ghost btn-sm" id="tlf-older"     onclick="tlSetFilter('older')"    >Älter</button>
-        <button class="btn btn-ghost btn-sm" id="tlf-all"       onclick="tlSetFilter('all')"      >Alle</button>
+<button class="btn btn-ghost btn-sm" id="tlf-older"     onclick="tlSetFilter('older')"    >Älter</button>
+        <button class="btn btn-ghost btn-sm" id="tlf-admin_login" onclick="tlSetFilter('admin_login')"
+          style="border-style:dashed;opacity:0.75">🛡️ Admin-Anm.</button>
       </div>
 
       <!-- Von/Bis -->
@@ -2654,7 +2655,7 @@ window.firebaseCreateTestUser = async function(data) {
           <span class="date-pill-label" id="tlTo-lbl">📅 Klick</span>
         </div>
         <button class="btn btn-ghost btn-sm" onclick="tlSetFilter('custom')" style="font-size:0.78rem">🔍 Filtern</button>
-        <button class="btn btn-ghost btn-sm" onclick="tlSetFilter('all')" style="font-size:0.78rem">✕</button>
+<button class="btn btn-ghost btn-sm" onclick="tlResetFilter()" style="font-size:0.78rem">✕</button>
       </div>
     </div>
 
@@ -5898,7 +5899,7 @@ async function renderUmfrageResults() {
         <span class="date-pill-label" id="umfrageTo-lbl">📅 Klick</span>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="_applyUmfrageFilter()" style="font-size:0.78rem">🔍 Filtern</button>
-      <button class="btn btn-ghost btn-sm" onclick="_clearUmfrageFilter()" style="font-size:0.78rem">✕ Zurücksetzen</button>
+<button class="btn btn-ghost btn-sm" onclick="_clearUmfrageFilter()" style="font-size:0.78rem">✕</button>
       <span id="umfrageFilterInfo" style="font-size:0.75rem;color:var(--prestige-color)"></span>
     </div>
     <div id="umfrageBody"></div>`;
@@ -7137,7 +7138,11 @@ function renderAdminCodeList() {
 
 function openSuperAdminPanel() {
   openAdminPanel();                       // Normale Admin-Rechte zuerst
-  state._isSuperAdmin = true;            // ← Erweiterter Admin
+state._isSuperAdmin = true;            // ← Erweiterter Admin
+  if (typeof window.firebaseLogTimeline === 'function') {
+    window.firebaseLogTimeline({ name: state.name||'?', xp: 0,
+      title: 'Super-Admin-Panel geöffnet', label: 'Super-Admin', type: 'admin_login' });
+  }
   const tlBtn = document.getElementById('timelineTabBtn');
   if (tlBtn) tlBtn.style.display = '';
 // Admin-Pille auf Gold (Super-Admin)
@@ -7182,10 +7187,25 @@ function _tlWeekStart() {
   return d.getTime();
 }
 
+function tlResetFilter() {
+  _tlFilterMode = 'all';
+  ['today','yesterday','thisweek','lastweek','thismonth','lastmonth','older','admin_login'].forEach(m => {
+    const b = document.getElementById('tlf-'+m);
+    if (!b) return;
+    b.style.opacity = ''; b.style.fontWeight = '';
+    b.style.background = ''; b.style.borderColor = ''; b.style.color = '';
+  });
+  const fi = document.getElementById('tlFrom'); if (fi) fi.value = '';
+  const ti = document.getElementById('tlTo');   if (ti) ti.value = '';
+  const box = document.getElementById('tlFilterBox');
+  if (box) { box.style.borderColor = ''; box.style.boxShadow = ''; box.style.background = ''; }
+  tlRenderFiltered();
+}
+
 function tlSetFilter(mode) {
   _tlFilterMode = mode;
   const isFiltered = mode !== 'all';
-  ['today','yesterday','thisweek','lastweek','thismonth','lastmonth','older','all'].forEach(m => {
+  ['today','yesterday','thisweek','lastweek','thismonth','lastmonth','older','admin_login'].forEach(m => {
     const b = document.getElementById('tlf-'+m);
     if (!b) return;
     b.style.opacity     = m === mode ? '1' : '0.55';
@@ -7220,7 +7240,8 @@ function tlGetFiltered() {
   if (_tlFilterMode === 'lastweek')  return items.filter(i => i.ts >= lastWeekS && i.ts < thisWeekS);
   if (_tlFilterMode === 'thismonth') return items.filter(i => i.ts >= thisMonthS);
   if (_tlFilterMode === 'lastmonth') return items.filter(i => i.ts >= lastMonthS && i.ts < thisMonthS);
-  if (_tlFilterMode === 'older')     return items.filter(i => i.ts < lastMonthS);
+if (_tlFilterMode === 'older')       return items.filter(i => i.ts < lastMonthS);
+  if (_tlFilterMode === 'admin_login') return items.filter(i => i.type === 'admin_login');
   if (_tlFilterMode === 'custom') {
     const f    = document.getElementById('tlFrom')?.value;
     const t    = document.getElementById('tlTo')?.value;
@@ -7399,7 +7420,11 @@ document.getElementById('adminPanel')?.classList.add('visible');
     adminStarEl.style.animation = '';
     adminStarEl.title = 'Admin-Modus aktiviert';
   }
-  showToast('🛡️ Admin-Konsole aktiviert!');
+showToast('🛡️ Admin-Konsole aktiviert!');
+  if (typeof window.firebaseLogTimeline === 'function') {
+    window.firebaseLogTimeline({ name: state.name||'?', xp: 0,
+      title: 'Admin-Panel geöffnet', label: 'Admin', type: 'admin_login' });
+  }
 
   // Admin-Badge-Hint
   document.getElementById('adminBadgeHint').style.display = 'block';
@@ -7571,8 +7596,8 @@ const strFields = ['name', 'module', 'rank'];
         ${th('module','Modul')}
         ${th('xp','⚡ XP')}
         ${th('badges','🏅')}
-        ${th('firstLogin','📅 1. Login')}
-        ${th('updated','🕐 Letzter Login')}
+${th('firstLogin','1. Login')}
+        ${th('updated','L. Login')}
         <th></th>
       </tr></thead><tbody>`;
 
