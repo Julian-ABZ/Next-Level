@@ -2642,18 +2642,21 @@ window.firebaseCreateTestUser = async function(data) {
           style="border-style:dashed;opacity:0.75">🛡️ Admin-Anm.</button>
       </div>
 
-<!-- Von/Bis -->
+      <!-- Von/Bis -->
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <span style="font-size:0.78rem;color:var(--text-muted);font-weight:700">📅 Zeitraum:</span>
+        <span style="font-size:0.78rem;color:var(--text-muted);font-weight:700">Von/Bis:</span>
         <div class="date-pill" onclick="document.getElementById('tlFrom').showPicker()">
           <input type="date" id="tlFrom" oninput="updateDatePill(this)" style="color-scheme:dark">
-          <span class="date-pill-label" id="tlFrom-lbl">📅 Von</span>
+          <span class="date-pill-label" id="tlFrom-lbl">📅 Klick</span>
         </div>
-        <span style="color:var(--text-muted);font-size:0.78rem">–</span>
+        <span style="color:var(--text-muted);font-size:0.78rem">bis</span>
         <div class="date-pill" onclick="document.getElementById('tlTo').showPicker()">
           <input type="date" id="tlTo" oninput="updateDatePill(this)" style="color-scheme:dark">
-          <span class="date-pill-label" id="tlTo-lbl">📅 Bis</span>
+          <span class="date-pill-label" id="tlTo-lbl">📅 Klick</span>
         </div>
+        <button class="btn btn-ghost btn-sm" onclick="tlSetFilter('custom')" style="font-size:0.78rem">🔍 Filtern</button>
+<button class="btn btn-ghost btn-sm" onclick="tlResetFilter()" style="font-size:0.78rem">✕</button>
+      </div>
     </div>
 
     <div id="timelineList"></div>
@@ -5886,14 +5889,14 @@ async function renderUmfrageResults() {
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;
       padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid var(--card-border)">
 <span style="font-size:0.78rem;color:var(--text-muted);font-weight:700">📅 Zeitraum:</span>
-      <div class="date-pill" onclick="document.getElementById('umfrageFrom').showPicker()">
+<div class="date-pill" onclick="document.getElementById('umfrageFrom').showPicker()">
         <input type="date" id="umfrageFrom" oninput="updateDatePill(this)" style="color-scheme:dark">
-        <span class="date-pill-label" id="umfrageFrom-lbl">📅 Von</span>
+        <span class="date-pill-label" id="umfrageFrom-lbl">📅 Klick</span>
       </div>
-      <span style="color:var(--text-muted);font-size:0.78rem">–</span>
+      <span style="color:var(--text-muted);font-size:0.78rem">bis</span>
       <div class="date-pill" onclick="document.getElementById('umfrageTo').showPicker()">
         <input type="date" id="umfrageTo" oninput="updateDatePill(this)" style="color-scheme:dark">
-        <span class="date-pill-label" id="umfrageTo-lbl">📅 Bis</span>
+        <span class="date-pill-label" id="umfrageTo-lbl">📅 Klick</span>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="_applyUmfrageFilter()" style="font-size:0.78rem">🔍 Filtern</button>
 <button class="btn btn-ghost btn-sm" onclick="_clearUmfrageFilter()" style="font-size:0.78rem">✕</button>
@@ -5978,15 +5981,15 @@ function _renderUmfrageBody(data) {
       const numVals = vals.map(Number).filter(n=>!isNaN(n));
       const avg = numVals.length ? (numVals.reduce((a,b)=>a+b,0)/numVals.length).toFixed(1) : '–';
       html += `<div style="font-size:1rem;font-weight:800;color:var(--prestige-color);margin-bottom:8px">Ø ${avg}</div>`;
-q.options.forEach(o => {
+      q.options.forEach(o => {
         const cnt = vals.filter(v=>v===o.val).length;
         const pct = vals.length>0?Math.round(cnt/vals.length*100):0;
         html += `<div style="margin-bottom:5px;display:flex;align-items:center;gap:8px">
           <span style="font-size:1.2rem;width:28px;text-align:center">${o.emoji}</span>
           <div style="flex:1">
-            <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:2px;gap:8px">
-              <span style="color:var(--text-muted);white-space:nowrap;flex-shrink:0">${o.label}</span>
-              <span style="font-weight:800;color:var(--prestige-color);white-space:nowrap">${cnt} (${pct}%)</span>
+            <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:2px">
+              <span style="color:var(--text-muted)">${o.label}</span>
+              <span style="font-weight:800;color:var(--prestige-color)">${cnt} (${pct}%)</span>
             </div>
             <div style="background:rgba(255,255,255,0.07);border-radius:50px;height:7px">
               <div style="height:100%;width:${vals.length?Math.round(cnt/vals.length*100):0}%;
@@ -6067,8 +6070,7 @@ function updateDatePill(input) {
     const [y,m,d] = input.value.split('-');
     disp.textContent = `📅 ${d}.${m}.${y}`;
   } else {
-    const isTo = input.id.toLowerCase().endsWith('to');
-    disp.textContent = isTo ? '📅 Bis' : '📅 Von';
+    disp.textContent = '📅 Klick';
   }
 }
 
@@ -7308,7 +7310,7 @@ function tlRenderFiltered() {
       + '<span>' + icon + '</span>'
       + '<span onclick="tlOpenUserDetail(\'' + safeName + '\')"'
       + ' style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'
-+ 'cursor:pointer;color:var(--prestige-color)"'
+      + 'cursor:pointer;color:var(--prestige-color);text-decoration:underline dotted"'
       + ' title="Nutzerprofil anzeigen">' + (it.name||'?') + '</span>'
       + '<span style="color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + detail + '</span>'
       + xpStr
